@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Dulio API">
+  <rect width="64" height="64" rx="14" fill="#5865f2"/>
+  <path d="M20 18h14c10 0 16 5 16 14S44 46 34 46H20V18Zm9 8v12h5c5 0 7-2 7-6s-2-6-7-6h-5Z" fill="#fff"/>
+  <circle cx="17" cy="32" r="4" fill="#b7bcff"/>
+</svg>

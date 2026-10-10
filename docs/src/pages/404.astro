@@ -1,0 +1,16 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro'
+---
+
+<StarlightPage
+  hasSidebar={false}
+  frontmatter={{
+    title: 'Page not found',
+    description: 'The requested documentation page does not exist.',
+    editUrl: false,
+    pagefind: false,
+  }}
+>
+  <p>The requested documentation route does not exist or has moved.</p>
+  <p><a href="/">Return to the API overview</a></p>
+</StarlightPage>
