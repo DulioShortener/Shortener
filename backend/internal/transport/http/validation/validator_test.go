@@ -56,10 +56,26 @@ func TestUsernameAndURLValidation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, username := range []string{"a", "two..dots", "invalid-name", "spaces are bad"} {
+	for _, username := range []string{"a", "Alicia", "two..dots", "invalid-name", "spaces are bad"} {
 		err := requestValidator.Validate(request.UserCreate{Username: username, Password: "Password1!"})
 		if err == nil {
 			t.Errorf("expected username %q to be rejected", username)
+		}
+	}
+	if err := requestValidator.Validate(request.Login{Username: "Alicia", Password: "Password1!"}); err == nil {
+		t.Error("expected uppercase login username to be rejected")
+	}
+	for _, displayName := range []string{" Alicia", "Alicia ", " a ", "  "} {
+		err := requestValidator.Validate(request.UserCreate{
+			Username: "alicia", DisplayName: &displayName, Password: "Password1!",
+		})
+		if err == nil {
+			t.Errorf("expected display name %q to be rejected", displayName)
+			continue
+		}
+		apiError := validation.InvalidForm(err)
+		if apiError.Fields["display_name"] == "" {
+			t.Errorf("expected a display_name field error for %q", displayName)
 		}
 	}
 	for _, targetURL := range []string{"ftp://example.com", "javascript:alert(1)", "https://user:pass@example.com", "https://" + strings.Repeat("a", 4096)} {

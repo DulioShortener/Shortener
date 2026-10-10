@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/DulioShortener/Shortener/backend/internal/entity"
@@ -63,7 +62,7 @@ func NewAuthService(
 }
 
 func (s *AuthService) Login(ctx context.Context, input LoginInput) (LoginResult, error) {
-	user, err := s.users.FindByUsername(ctx, strings.ToLower(input.Username))
+	user, err := s.users.FindByUsername(ctx, input.Username)
 	if errors.Is(err, ErrUserNotFound) {
 		_, _ = s.passwords.Verify(input.Password, s.dummyPassword)
 		return LoginResult{}, ErrInvalidCredentials

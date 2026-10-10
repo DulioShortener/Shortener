@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/DulioShortener/Shortener/backend/internal/entity"
 )
@@ -41,16 +40,11 @@ func (s *UserService) Create(ctx context.Context, input UserCreateInput) (entity
 		return entity.User{}, err
 	}
 
-	var displayName *string
-	if input.DisplayName != nil {
-		value := strings.TrimSpace(*input.DisplayName)
-		displayName = &value
-	}
 	now := s.clock.Now().UTC()
 	return s.users.Create(ctx, entity.User{
 		ID:           id,
-		Username:     strings.ToLower(input.Username),
-		DisplayName:  displayName,
+		Username:     input.Username,
+		DisplayName:  input.DisplayName,
 		PasswordHash: passwordHash,
 		CreatedAt:    now,
 		UpdatedAt:    now,

@@ -96,8 +96,13 @@ func TestAccountAuthenticationAndLinkLifecycle(t *testing.T) {
 		t.Fatalf("unexpected validation response: %#v", invalidBody)
 	}
 
-	register := performJSON(t, server.Handler(), http.MethodPost, "/api/v1/users", "", map[string]any{
+	uppercaseUsername := performJSON(t, server.Handler(), http.MethodPost, "/api/v1/users", "", map[string]any{
 		"username": "Dulio.User", "password": "Password1!",
+	})
+	assertAPIError(t, uppercaseUsername, http.StatusUnprocessableEntity, "INVALID_FORM_BODY")
+
+	register := performJSON(t, server.Handler(), http.MethodPost, "/api/v1/users", "", map[string]any{
+		"username": "dulio.user", "password": "Password1!",
 	})
 	if register.Code != http.StatusCreated {
 		t.Fatalf("register status=%d body=%s", register.Code, register.Body.String())

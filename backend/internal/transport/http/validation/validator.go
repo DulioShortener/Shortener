@@ -15,7 +15,7 @@ import (
 
 const maxURLBytes = 4096
 
-var usernamePattern = regexp.MustCompile(`^[A-Za-z0-9._]{2,32}$`)
+var usernamePattern = regexp.MustCompile(`^[a-z0-9._]{2,32}$`)
 
 type Validator struct {
 	validator *validator.Validate
@@ -34,6 +34,7 @@ func New() (*Validator, error) {
 	registrations := map[string]validator.Func{
 		"username":   validateUsername,
 		"notblank":   validateNotBlank,
+		"trimmed":    validateTrimmed,
 		"haslower":   contains(unicode.IsLower),
 		"hasupper":   contains(unicode.IsUpper),
 		"hasdigit":   contains(unicode.IsDigit),
@@ -73,6 +74,11 @@ func validateNotBlank(field validator.FieldLevel) bool {
 	return strings.TrimSpace(field.Field().String()) != ""
 }
 
+func validateTrimmed(field validator.FieldLevel) bool {
+	value := field.Field().String()
+	return value == strings.TrimSpace(value)
+}
+
 func contains(predicate func(rune) bool) validator.Func {
 	return func(field validator.FieldLevel) bool {
 		for _, character := range field.Field().String() {
@@ -105,9 +111,11 @@ func validationMessage(field validator.FieldError) string {
 	case "max":
 		return "This value must be at most " + field.Param() + " characters long"
 	case "username":
-		return "Use 2-32 letters, digits, underscores, or periods without consecutive periods"
+		return "Use 2-32 lowercase letters, digits, underscores, or periods without consecutive periods"
 	case "notblank":
 		return "This value cannot contain only whitespace"
+	case "trimmed":
+		return "This value must not have leading or trailing whitespace"
 	case "haslower":
 		return "This value must contain at least one lowercase letter"
 	case "hasupper":
