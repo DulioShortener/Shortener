@@ -70,8 +70,8 @@ paths:
         never normalizes invalid input. A provided display name must not have
         leading or trailing whitespace.
 
-        This operation shares an in-memory, per-client-IP rate limit with
-        login: 5 requests per second with a burst of 5 on each API instance.
+        This operation shares a per-client-IP rate limit with login: 5 requests
+        per second with a burst of 5.
       requestBody:
         required: true
         content:
@@ -180,12 +180,11 @@ paths:
       summary: Create a bearer session
       description: |
         Verifies the exact lowercase username and password, then returns a new
-        opaque 256-bit bearer token. The raw token is returned once; only its
-        SHA-256 verifier is stored by the service.
+        opaque 256-bit bearer token. The raw token is returned only in this
+        response and cannot be retrieved later.
 
-        This operation shares an in-memory, per-client-IP rate limit with
-        account creation: 5 requests per second with a burst of 5 on each API
-        instance.
+        This operation shares a per-client-IP rate limit with account creation:
+        5 requests per second with a burst of 5.
       requestBody:
         required: true
         content:
@@ -571,7 +570,7 @@ components:
           description: |
             Absolute HTTP or HTTPS URL, without user information, no longer
             than 4096 UTF-8 bytes. Surrounding whitespace is removed before
-            storage. Other URL characters are preserved.
+            the URL is accepted. Other URL characters are preserved.
           example: https://example.com/articles/sonyflake?source=dulio
     Link:
       type: object
