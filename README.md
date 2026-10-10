@@ -4,8 +4,9 @@ Dulio Shortener is a small full-stack application for creating and managing
 short URLs. Users create an account, sign in, save links, and share compact URLs
 that redirect visitors to the original destination.
 
-The project contains a Go API built with Echo and SQLite, plus a React and
-TypeScript frontend built with Vite.
+The project contains a Go API built with Echo and SQLite, a React and TypeScript
+frontend built with Vite, and an Astro Starlight API-reference site generated
+from Markdown and OpenAPI.
 
 ## ✨ What it does
 
@@ -29,7 +30,8 @@ For native development:
 
 - Go 1.27.2 or newer
 - A C compiler available on `PATH`, required by `go-sqlite3`
-- Node.js 20.19.x or 22.12 or newer, plus npm
+- Node.js 22.12 or newer, plus npm. Astro 7 in `docs` requires Node 22.12 even
+  though the Vite frontend can also build on Node 20.19.
 
 ## 🏗️ How to build
 
@@ -54,6 +56,18 @@ npm run build
 ```
 
 The frontend build is written to `frontend/dist`.
+
+Install the locked documentation dependencies, validate its OpenAPI contract,
+and create the static documentation build:
+
+```sh
+cd docs
+npm ci
+npm run check
+npm run build
+```
+
+The documentation build is written to `docs/dist`.
 
 ## 🚀 How to run
 
@@ -170,13 +184,52 @@ npm run lint
 npm run build
 ```
 
-## ☁️ Deployment note
+Run the documentation checks from `docs`:
 
-This project currently runs on Oracle Cloud Infrastructure (OCI), but the
-repository does not include a Terraform module or a complete cloud deployment
-guide.
+```sh
+npm run check
+npm run build
+npm audit
+```
 
-The steps above describe the project itself. Production deployment may differ
-because OCI setup, cloud networking, Cloudflare integration, DNS routing, and
-TLS certificate provisioning add environment-specific layers that cannot be
-fully addressed by this README.
+## ☁️ Deployment
+
+The Go API currently runs on Oracle Cloud Infrastructure (OCI). Its origin,
+network, TLS certificate, and database provisioning remain environment-specific
+and are not automated by this repository.
+
+### API documentation on Cloudflare Pages
+
+Cloudflare Pages supports Astro directly, including the Legacy Pages build
+configuration. Create a Pages project from this Git repository with:
+
+| Setting | Value |
+| --- | --- |
+| Production branch | `master` |
+| Framework preset | `Astro` |
+| Root directory | `docs` |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+
+If the Legacy Pages interface does not list Astro, select no framework preset
+and enter the same root, command, and output directory manually. This is a
+fully static Astro build and does not need `@astrojs/cloudflare`, Pages
+Functions, Workers, or a Wrangler configuration. Set `NODE_VERSION` to a value
+of at least `22.12.0` if the Pages build image does not honor the package
+`engines` field automatically.
+
+After the first successful deployment:
+
+1. Open the Pages project and select **Custom domains**.
+2. Add `api-reference.3dreamstudio.com.br` and activate it.
+3. Because `3dreamstudio.com.br` is already a Cloudflare-managed zone,
+   Cloudflare should create the required CNAME record automatically.
+4. Verify the custom domain is active and that `/openapi.yaml` and
+   `/api-reference/` are reachable.
+
+Attach the custom domain through the Pages project before creating or changing
+DNS manually. A CNAME pointed at `*.pages.dev` without the Pages custom-domain
+association can fail with HTTP 522.
+
+This repository prepares and verifies the deployment artifact but does not
+create the Cloudflare Pages project or mutate external DNS automatically.
