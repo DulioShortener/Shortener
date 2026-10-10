@@ -6,7 +6,11 @@ dist/
 dist-ssr/
 build/
 .vite/
+.astro/
 .cache/
+
+# Local design-review captures
+.impeccable/review/
 
 # Go builds and test artifacts
 bin/
