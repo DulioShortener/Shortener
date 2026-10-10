@@ -54,9 +54,9 @@ Codes contain exactly eight case-sensitive characters from this Base62 set:
 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 ```
 
-Codes are generated with cryptographic randomness and are globally unique in
-the database. The service retries a collision up to five times. A code is not a
-Sonyflake and must not be substituted for the link `id` in delete requests.
+Codes are generated with cryptographic randomness and are unique across the
+service. A code is not a Sonyflake and must not be substituted for the link
+`id` in delete requests.
 
 ## Limits and ordering
 
