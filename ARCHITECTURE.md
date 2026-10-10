@@ -2,14 +2,17 @@
 
 ## Purpose and shape
 
-Dulio Shortener is a full-stack application with two independently built
-runtime surfaces:
+Dulio Shortener is a full-stack application with three independently built
+surfaces:
 
 - `backend` is a Go and Echo HTTPS API using a pragmatic hexagonal
   architecture.
 - `frontend` is a React, TypeScript, and Vite browser application. It is still
   a minimal scaffold; its rules below define how it should grow rather than
   claiming feature modules that do not yet exist.
+- `docs` is a static Astro Starlight API-reference site. Markdown owns the
+  explanatory guides, `public/openapi.yaml` owns the machine-readable public
+  contract, and Scalar renders the interactive request client.
 
 The architecture protects domain behavior, dependency direction, explicit
 contracts, and testability. It does not require one directory for every design
@@ -22,6 +25,7 @@ short URL bypasses the frontend entirely:
 ```text
 Browser application -> /api/v1/* -> HTTP adapter -> service -> repository -> SQLite
 Public visitor      -> /r/:code  -> HTTP adapter -> service -> repository -> HTTP 302
+Documentation reader -> Cloudflare Pages -> static guides and interactive OpenAPI client
 ```
 
 ## Repository ownership
@@ -46,6 +50,8 @@ Public visitor      -> /r/:code  -> HTTP adapter -> service -> repository -> HTT
 - `frontend` owns the browser application, its package manifest, and its build
   configuration. Feature-specific frontend source should remain with its
   feature as the application grows.
+- `docs` owns the documentation package, authored guides, OpenAPI description,
+  documentation styles, and Cloudflare Pages static artifact.
 
 The repository has one operational `README.md`. Architectural decisions live
 here; commands and deployment instructions belong in the README rather than
@@ -144,9 +150,33 @@ Echo's `HTTPStatusCoder` contract is preserved so router and middleware errors
 retain statuses such as 404, 405, 413, 415, and 429 without exposing internal
 error details.
 
+Usernames must already match the lowercase public grammar; validation rejects
+uppercase input and services do not normalize it. Optional display names must
+already have no leading or trailing whitespace; validation rejects surrounding
+whitespace and services preserve the accepted value unchanged. This keeps the
+transport contract, service input, and SQLite constraints consistent.
+
 API contract changes require coordinated backend request or response DTO
-updates and frontend transport-type updates. UI code must not infer types from
-example payloads or coerce identifiers to JavaScript numbers.
+updates, frontend transport-type updates, and `docs/public/openapi.yaml`
+updates. UI code must not infer types from example payloads or coerce
+identifiers to JavaScript numbers.
+
+## API documentation
+
+The documentation is an independent static build rather than a route inside
+the React application or Go service. Starlight supplies accessible navigation,
+responsive reading layouts, code rendering, and Pagefind search. Scalar reads
+the checked-in OpenAPI 3.1 description and sends interactive requests directly
+from the reader's browser to the production API; no documentation proxy handles
+credentials.
+
+Most content stays in Markdown. The site intentionally has no custom MDX
+component layer because the current API is small and short-lived. Redocly CLI
+validates the OpenAPI document, Astro performs type and content checks, and a
+production build verifies every static route and the search index. The docs
+package uses its own `package-lock.json`; its transitive PostCSS override keeps
+the build dependency graph clear of the selector-parser denial-of-service
+advisory present in the upstream default resolution.
 
 ## Authentication
 
@@ -214,8 +244,10 @@ short URLs use HTTPS and the configured base hostname.
 Echo terminates TLS on port 443 using `/data/tls/origin.pem` and
 `/data/tls/origin.key`. Compose bind-mounts the host `data/` directory, so the
 database and certificates survive container replacement without being copied
-into an image. Cloudflare proxies the base hostname to Go and routes the `app`
-hostname to the frontend deployment.
+into an image. Cloudflare proxies the base hostname to Go, routes the `app`
+hostname to the frontend deployment, and serves
+`api-reference.<DULIO_BASE_HOSTNAME>` from the static Cloudflare Pages
+documentation project.
 
 CORS currently permits every origin because browser clients authenticate with
 explicit bearer tokens rather than cookies. Echo allows requested preflight
@@ -231,6 +263,11 @@ repositories and migrations use real temporary-file SQLite integration tests;
 HTTP behavior uses handler or server tests. Frontend behavior should use the
 smallest appropriate unit, component, or integration test and must validate
 user-visible error and edge states, not only successful rendering.
+
+Documentation changes run `astro check`, Redocly OpenAPI linting, the static
+Astro build, and `npm audit`. A public route, request, response, validation, or
+error-code change is incomplete until the OpenAPI description and relevant
+guide are updated with it.
 
 The frontend currently has no test harness. The first behavioral frontend
 implementation must establish a suitable minimal harness and a package script
