@@ -197,39 +197,3 @@ npm audit
 The Go API currently runs on Oracle Cloud Infrastructure (OCI). Its origin,
 network, TLS certificate, and database provisioning remain environment-specific
 and are not automated by this repository.
-
-### API documentation on Cloudflare Pages
-
-Cloudflare Pages supports Astro directly, including the Legacy Pages build
-configuration. Create a Pages project from this Git repository with:
-
-| Setting | Value |
-| --- | --- |
-| Production branch | `master` |
-| Framework preset | `Astro` |
-| Root directory | `docs` |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-
-If the Legacy Pages interface does not list Astro, select no framework preset
-and enter the same root, command, and output directory manually. This is a
-fully static Astro build and does not need `@astrojs/cloudflare`, Pages
-Functions, Workers, or a Wrangler configuration. Set `NODE_VERSION` to a value
-of at least `22.12.0` if the Pages build image does not honor the package
-`engines` field automatically.
-
-After the first successful deployment:
-
-1. Open the Pages project and select **Custom domains**.
-2. Add `api-reference.3dreamstudio.com.br` and activate it.
-3. Because `3dreamstudio.com.br` is already a Cloudflare-managed zone,
-   Cloudflare should create the required CNAME record automatically.
-4. Verify the custom domain is active and that `/openapi.yaml` and
-   `/api-reference/` are reachable.
-
-Attach the custom domain through the Pages project before creating or changing
-DNS manually. A CNAME pointed at `*.pages.dev` without the Pages custom-domain
-association can fail with HTTP 522.
-
-This repository prepares and verifies the deployment artifact but does not
-create the Cloudflare Pages project or mutate external DNS automatically.
