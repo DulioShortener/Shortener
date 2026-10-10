@@ -24,8 +24,8 @@ lowercase username and password. Each successful login creates an independent
 session; logging in does not revoke older sessions.
 
 The token is 32 cryptographically random bytes encoded as 43 unpadded base64url
-characters. Only a SHA-256 verifier is stored in SQLite, so the raw token cannot
-be recovered from the database.
+characters. It is returned only in the login response and cannot be retrieved
+again later.
 
 :::caution
 Anyone holding a token can act as that session. Do not put it in URLs, logs,
@@ -35,8 +35,8 @@ source control, screenshots, or client-side analytics.
 ## Expiration
 
 The login response includes `created_at` and `expires_at`. Treat `expires_at` as
-authoritative. The configured default lifetime is 24 hours, but deployments can
-change it through `AUTH_TOKEN_TTL`.
+authoritative. The current default lifetime is 24 hours, but clients must not
+assume a fixed lifetime.
 
 An expired session returns `401 UNAUTHORIZED`. The service also removes the
 expired session when it is presented.

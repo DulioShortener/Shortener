@@ -43,19 +43,20 @@ returns `413 REQUEST_BODY_TOO_LARGE` before an endpoint processes it.
 
 ## Authentication rate limit
 
-`POST /api/v1/users` and `POST /api/v1/auth/login` share one token bucket per
-client IP address on each API instance:
+`POST /api/v1/users` and `POST /api/v1/auth/login` share a rate limit for each
+client IP address:
 
 - sustained rate: 5 requests per second;
 - burst: 5 requests; and
-- idle in-memory entries expire after 3 minutes.
+- unused rate-limit state may reset over time.
 
 Responses from those two routes include `X-RateLimit-Limit` and
 `X-RateLimit-Remaining`. A denied request also includes `Retry-After` and
 returns `429 RATE_LIMIT_EXCEEDED`.
 
-Because the limiter is in memory, counters are not shared across API instances
-and reset when an instance restarts.
+Rate-limit headers describe the request's observed limit state. Clients must
+honor `429` and `Retry-After` instead of treating the reported remainder as a
+reserved quota.
 
 ## Request IDs
 
