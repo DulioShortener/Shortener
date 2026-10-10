@@ -1,0 +1,824 @@
+openapi: 3.1.0
+info:
+  title: Dulio Shortener API
+  version: 1.0.0
+  summary: Create accounts, authenticate, and manage short links.
+  description: |
+    The Dulio Shortener API is a small JSON API for creating account-scoped
+    short links. All identifiers are Sonyflake values encoded as decimal
+    strings, and all timestamps are UTC RFC 3339 strings.
+
+    The versioned JSON API lives under `/api/v1`. Public redirects live at
+    `/r/{code}` and are intentionally outside the versioned JSON namespace.
+  contact:
+    name: Dulio Shortener source repository
+    url: https://github.com/DulioShortener/Shortener
+servers:
+  - url: https://3dreamstudio.com.br
+    description: Production
+security: []
+tags:
+  - name: Accounts
+    description: Account creation and the current user.
+  - name: Authentication
+    description: Opaque bearer-session creation and revocation.
+  - name: Links
+    description: Account-scoped short-link management.
+  - name: Public routing
+    description: Browser-facing redirects outside the JSON API.
+paths:
+  /:
+    get:
+      operationId: redirectToApplication
+      tags: [Public routing]
+      summary: Redirect to the browser application
+      description: Permanently redirects to `https://app.3dreamstudio.com.br/`.
+      responses:
+        '301':
+          description: Permanent redirect to the browser application.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+            Location:
+              description: Browser application URL.
+              schema:
+                type: string
+                const: https://app.3dreamstudio.com.br/
+    head:
+      operationId: inspectApplicationRedirect
+      tags: [Public routing]
+      summary: Inspect the application redirect
+      description: Returns the same redirect headers as `GET /` without a response body.
+      responses:
+        '301':
+          description: Permanent redirect to the browser application.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+            Location:
+              description: Browser application URL.
+              schema:
+                type: string
+                const: https://app.3dreamstudio.com.br/
+  /api/v1/users:
+    post:
+      operationId: createUser
+      tags: [Accounts]
+      summary: Create an account
+      description: |
+        Creates an account. Usernames must already be lowercase; the server
+        never normalizes invalid input. A provided display name must not have
+        leading or trailing whitespace.
+
+        This operation shares an in-memory, per-client-IP rate limit with
+        login: 5 requests per second with a burst of 5 on each API instance.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+            examples:
+              complete:
+                summary: Account with a display name
+                value:
+                  username: alicia.dev
+                  display_name: Alicia
+                  password: StrongPassword1!
+              minimal:
+                summary: Account without a display name
+                value:
+                  username: alicia.dev
+                  password: StrongPassword1!
+      responses:
+        '201':
+          description: Account created.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/RateLimitLimit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimitRemaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: '229605206530457601'
+                username: alicia.dev
+                display_name: Alicia
+                created_at: '2026-10-10T14:32:15.123456789Z'
+                updated_at: '2026-10-10T14:32:15.123456789Z'
+        '409':
+          description: The username is already registered.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/RateLimitLimit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimitRemaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                errors:
+                  code: USERNAME_TAKEN
+                  fields:
+                    username: This username is already taken
+        '413':
+          $ref: '#/components/responses/RateLimitedRequestBodyTooLarge'
+        '415':
+          $ref: '#/components/responses/RateLimitedUnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/RateLimitedInvalidFormBody'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/RateLimitedInternalServerError'
+  /api/v1/users/me:
+    get:
+      operationId: getCurrentUser
+      tags: [Accounts]
+      summary: Get the current account
+      description: Returns the user associated with the presented bearer session.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current account.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: The session references an account that no longer exists.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                errors:
+                  code: USER_NOT_FOUND
+                  message: User not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      tags: [Authentication]
+      summary: Create a bearer session
+      description: |
+        Verifies the exact lowercase username and password, then returns a new
+        opaque 256-bit bearer token. The raw token is returned once; only its
+        SHA-256 verifier is stored by the service.
+
+        This operation shares an in-memory, per-client-IP rate limit with
+        account creation: 5 requests per second with a burst of 5 on each API
+        instance.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              username: alicia.dev
+              password: StrongPassword1!
+      responses:
+        '200':
+          description: Session created.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/RateLimitLimit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimitRemaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Username or password is incorrect.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/RateLimitLimit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/RateLimitRemaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                errors:
+                  code: INVALID_CREDENTIALS
+                  message: Invalid username or password
+        '413':
+          $ref: '#/components/responses/RateLimitedRequestBodyTooLarge'
+        '415':
+          $ref: '#/components/responses/RateLimitedUnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/RateLimitedInvalidFormBody'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/RateLimitedInternalServerError'
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      tags: [Authentication]
+      summary: Revoke the current session
+      description: Deletes only the bearer session used for this request.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Session revoked. The response has no body.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/links:
+    post:
+      operationId: createLink
+      tags: [Links]
+      summary: Create a short link
+      description: |
+        Creates one immutable link for the authenticated account. The submitted
+        URL is preserved for redirects after surrounding whitespace is removed.
+        A separate canonical comparison key is used for per-account duplicate
+        detection.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkCreate'
+            example:
+              url: https://example.com/articles/sonyflake?source=dulio
+      responses:
+        '201':
+          description: Short link created.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Link'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: The canonical destination already exists or the account has 50 links.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                duplicate:
+                  summary: Duplicate canonical destination
+                  value:
+                    errors:
+                      code: LINK_ALREADY_EXISTS
+                      fields:
+                        url: You have already shortened this URL
+                limit:
+                  summary: Account link limit reached
+                  value:
+                    errors:
+                      code: LINK_LIMIT_REACHED
+                      message: An account can have at most 50 links
+        '413':
+          $ref: '#/components/responses/RequestBodyTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/InvalidFormBody'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      operationId: listLinks
+      tags: [Links]
+      summary: List the current account's links
+      description: |
+        Returns every link owned by the authenticated account, newest first.
+        The result is not paginated because an account can own at most 50 links.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Link collection. An account with no links receives an empty array.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkList'
+              example:
+                links:
+                  - id: '229605206530457602'
+                    user_id: '229605206530457601'
+                    code: aZ09BcDe
+                    target_url: https://example.com/articles/sonyflake?source=dulio
+                    short_url: https://3dreamstudio.com.br/r/aZ09BcDe
+                    created_at: '2026-10-10T14:34:02.842Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/links/{id}:
+    delete:
+      operationId: deleteLink
+      tags: [Links]
+      summary: Delete a short link
+      description: |
+        Permanently deletes a link owned by the authenticated account. A link
+        owned by another account is reported as not found and is never revealed.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/LinkId'
+      responses:
+        '204':
+          description: Link deleted. The response has no body.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+        '400':
+          description: The path value is not a positive signed 63-bit decimal identifier.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                errors:
+                  code: INVALID_LINK_ID
+                  message: Link ID must be a positive decimal string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/LinkNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /r/{code}:
+    get:
+      operationId: resolveShortLink
+      tags: [Public routing]
+      summary: Follow a short link
+      description: Looks up the case-sensitive short code and redirects to its stored destination.
+      parameters:
+        - $ref: '#/components/parameters/ShortCode'
+      responses:
+        '302':
+          description: Temporary redirect to the original destination.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+            Location:
+              description: The stored target URL.
+              schema:
+                type: string
+                format: uri
+        '404':
+          $ref: '#/components/responses/LinkNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: Use the opaque token returned by `POST /api/v1/auth/login`.
+  parameters:
+    LinkId:
+      name: id
+      in: path
+      required: true
+      description: Positive Sonyflake link ID encoded as a decimal string.
+      schema:
+        $ref: '#/components/schemas/SonyflakeId'
+      example: '229605206530457602'
+    ShortCode:
+      name: code
+      in: path
+      required: true
+      description: Case-sensitive eight-character Base62 short code.
+      schema:
+        type: string
+        pattern: '^[0-9A-Za-z]{8}$'
+      example: aZ09BcDe
+  headers:
+    RequestId:
+      description: Request correlation identifier generated by the API or preserved from the incoming request.
+      schema:
+        type: string
+        minLength: 1
+    RateLimitLimit:
+      description: Maximum token-bucket burst for the shared account-creation and login limiter.
+      schema:
+        type: integer
+        const: 5
+    RateLimitRemaining:
+      description: Whole request tokens currently available for the client IP.
+      schema:
+        type: integer
+        minimum: 0
+  schemas:
+    SonyflakeId:
+      type: string
+      pattern: '^[1-9][0-9]{0,18}$'
+      description: |
+        Positive signed 63-bit Sonyflake value encoded as a decimal string.
+        Treat it as an opaque identifier. It is a string to prevent precision
+        loss in JavaScript and other clients whose exact integer range is
+        smaller than 63 bits.
+      example: '229605206530457601'
+    Timestamp:
+      type: string
+      format: date-time
+      description: |
+        UTC RFC 3339 timestamp. Fractional seconds are optional and may contain
+        up to nine digits; clients must not assume a fixed millisecond width.
+      example: '2026-10-10T14:32:15.123456789Z'
+    UserCreate:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 2
+          maxLength: 32
+          pattern: '^(?!.*\.\.)[a-z0-9._]+$'
+          description: |
+            Unique, case-insensitive account name. Input must already be
+            lowercase and may contain ASCII lowercase letters, digits,
+            underscores, and periods, without consecutive periods.
+          example: alicia.dev
+        display_name:
+          type: [string, 'null']
+          minLength: 2
+          maxLength: 32
+          pattern: '^\S(?:[\s\S]*\S)?$'
+          description: Optional display name with no leading or trailing whitespace.
+          example: Alicia
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          writeOnly: true
+          description: |
+            Must contain at least one lowercase letter, one uppercase letter,
+            one digit, and one punctuation or symbol character.
+          example: StrongPassword1!
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 2
+          maxLength: 32
+          pattern: '^(?!.*\.\.)[a-z0-9._]+$'
+          description: Exact lowercase username. The server does not normalize it.
+          example: alicia.dev
+        password:
+          type: string
+          format: password
+          maxLength: 128
+          writeOnly: true
+          example: StrongPassword1!
+    User:
+      type: object
+      additionalProperties: false
+      required: [id, username, display_name, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/SonyflakeId'
+        username:
+          type: string
+          minLength: 2
+          maxLength: 32
+          pattern: '^(?!.*\.\.)[a-z0-9._]+$'
+          example: alicia.dev
+        display_name:
+          type: [string, 'null']
+          minLength: 2
+          maxLength: 32
+          example: Alicia
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    LoginResponse:
+      type: object
+      additionalProperties: false
+      required: [id, token, token_type, user, created_at, expires_at]
+      properties:
+        id:
+          allOf:
+            - $ref: '#/components/schemas/SonyflakeId'
+          description: Authentication-session ID.
+        token:
+          type: string
+          minLength: 43
+          maxLength: 43
+          pattern: '^[A-Za-z0-9_-]{43}$'
+          description: Opaque 256-bit base64url bearer token, returned only when the session is created.
+          example: 4vQ0mVwC8N3Jk9S1xT6pL2aH7fR5yU0iE8bG3dK6zXQ
+        token_type:
+          type: string
+          const: Bearer
+        user:
+          $ref: '#/components/schemas/User'
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        expires_at:
+          $ref: '#/components/schemas/Timestamp'
+    LinkCreate:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: |
+            Absolute HTTP or HTTPS URL, without user information, no longer
+            than 4096 UTF-8 bytes. Surrounding whitespace is removed before
+            storage. Other URL characters are preserved.
+          example: https://example.com/articles/sonyflake?source=dulio
+    Link:
+      type: object
+      additionalProperties: false
+      required: [id, user_id, code, target_url, short_url, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/SonyflakeId'
+        user_id:
+          allOf:
+            - $ref: '#/components/schemas/SonyflakeId'
+          description: ID of the account that owns the link.
+        code:
+          type: string
+          minLength: 8
+          maxLength: 8
+          pattern: '^[0-9A-Za-z]{8}$'
+          description: Case-sensitive Base62 short code.
+          example: aZ09BcDe
+        target_url:
+          type: string
+          format: uri
+          description: Stored destination used by the public redirect.
+          example: https://example.com/articles/sonyflake?source=dulio
+        short_url:
+          type: string
+          format: uri
+          description: Absolute public redirect URL.
+          example: https://3dreamstudio.com.br/r/aZ09BcDe
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+    LinkList:
+      type: object
+      additionalProperties: false
+      required: [links]
+      properties:
+        links:
+          type: array
+          maxItems: 50
+          description: Links ordered by creation time descending, then ID descending.
+          items:
+            $ref: '#/components/schemas/Link'
+    ApiError:
+      type: object
+      additionalProperties: false
+      required: [errors]
+      properties:
+        errors:
+          $ref: '#/components/schemas/ErrorBody'
+    ErrorBody:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code:
+          type: string
+          description: Stable machine-readable error code.
+          example: INVALID_FORM_BODY
+        message:
+          type: string
+          description: Optional request-level explanation.
+          example: Authentication is required
+        fields:
+          type: object
+          description: Optional map of JSON field names to validation messages.
+          additionalProperties:
+            type: string
+          example:
+            username: Use 2-32 lowercase letters, digits, underscores, or periods without consecutive periods
+  responses:
+    InvalidFormBody:
+      description: The JSON body is malformed or one or more fields are invalid.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            validation:
+              summary: Field validation failed
+              value:
+                errors:
+                  code: INVALID_FORM_BODY
+                  fields:
+                    username: Use 2-32 lowercase letters, digits, underscores, or periods without consecutive periods
+            malformed:
+              summary: Malformed JSON
+              value:
+                errors:
+                  code: INVALID_FORM_BODY
+                  fields:
+                    body: The request body must contain valid JSON
+    Unauthorized:
+      description: The Authorization header is missing, malformed, expired, or revoked.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            errors:
+              code: UNAUTHORIZED
+              message: Authentication is required
+    LinkNotFound:
+      description: No visible link matches the requested identifier or short code.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            errors:
+              code: LINK_NOT_FOUND
+              message: Link not found
+    RequestBodyTooLarge:
+      description: The request body exceeds 64 KiB.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            errors:
+              code: REQUEST_BODY_TOO_LARGE
+              message: Request Entity Too Large
+    UnsupportedMediaType:
+      description: The request body does not use a supported JSON media type.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            errors:
+              code: UNSUPPORTED_MEDIA_TYPE
+              message: Unsupported Media Type
+    RateLimited:
+      description: The shared account-creation and login rate limit was exceeded.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/RateLimitLimit'
+        X-RateLimit-Remaining:
+          $ref: '#/components/headers/RateLimitRemaining'
+        Retry-After:
+          description: Whole seconds until another request is expected to be accepted.
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            errors:
+              code: RATE_LIMIT_EXCEEDED
+              message: Too Many Requests
+    InternalServerError:
+      description: An unexpected server-side failure occurred. Infrastructure details are never exposed.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            errors:
+              code: INTERNAL_SERVER_ERROR
+              message: An unexpected error occurred
+    RateLimitedInvalidFormBody:
+      description: The JSON body is malformed or one or more fields are invalid.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/RateLimitLimit'
+        X-RateLimit-Remaining:
+          $ref: '#/components/headers/RateLimitRemaining'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            errors:
+              code: INVALID_FORM_BODY
+              fields:
+                username: Use 2-32 lowercase letters, digits, underscores, or periods without consecutive periods
+    RateLimitedRequestBodyTooLarge:
+      description: The request body exceeds 64 KiB.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/RateLimitLimit'
+        X-RateLimit-Remaining:
+          $ref: '#/components/headers/RateLimitRemaining'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            errors:
+              code: REQUEST_BODY_TOO_LARGE
+              message: Request Entity Too Large
+    RateLimitedUnsupportedMediaType:
+      description: The request body does not use a supported JSON media type.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/RateLimitLimit'
+        X-RateLimit-Remaining:
+          $ref: '#/components/headers/RateLimitRemaining'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            errors:
+              code: UNSUPPORTED_MEDIA_TYPE
+              message: Unsupported Media Type
+    RateLimitedInternalServerError:
+      description: An unexpected server-side failure occurred. Infrastructure details are never exposed.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/RateLimitLimit'
+        X-RateLimit-Remaining:
+          $ref: '#/components/headers/RateLimitRemaining'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            errors:
+              code: INTERNAL_SERVER_ERROR
+              message: An unexpected error occurred
