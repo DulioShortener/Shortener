@@ -3,8 +3,9 @@ title: Data models
 description: Public request and response entities, field presence, nullability, and constraints.
 ---
 
-The tables below describe the JSON contract. Internal persistence fields are
-listed separately because clients must never depend on them.
+The tables below describe the public JSON contract. Fields that are not
+documented here are not part of that contract and clients must not depend on
+them.
 
 ## User creation request
 
@@ -34,7 +35,7 @@ depend on that behavior remaining part of the contract.
 | `created_at` | RFC 3339 string | Yes | No | Account creation time |
 | `updated_at` | RFC 3339 string | Yes | No | Last account update time; no update operation is currently public |
 
-The password hash is internal and is never returned.
+Passwords are never returned by the API.
 
 ## Authentication session
 
@@ -49,8 +50,7 @@ The login response represents a newly created authentication session:
 | `created_at` | RFC 3339 string | Yes | No | Session creation time |
 | `expires_at` | RFC 3339 string | Yes | No | Time after which the token is rejected |
 
-The session's `user_id` and stored SHA-256 token verifier are internal fields.
-The raw token is not recoverable after the login response is produced.
+The raw token appears only in the login response and cannot be retrieved later.
 
 ## Link creation request
 
@@ -68,9 +68,6 @@ The raw token is not recoverable after the login response is produced.
 | `target_url` | URI string | Yes | No | Stored redirect destination |
 | `short_url` | URI string | Yes | No | Absolute public URL for the short code |
 | `created_at` | RFC 3339 string | Yes | No | Link creation time |
-
-The canonical `target_url_key` used for duplicate detection is internal and is
-never returned.
 
 ## Link collection
 

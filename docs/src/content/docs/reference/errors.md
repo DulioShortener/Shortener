@@ -41,7 +41,7 @@ one invalid field.
 | `401` | `UNAUTHORIZED` | Bearer header is missing or malformed, or the session is unknown, expired, or revoked |
 | `404` | `USER_NOT_FOUND` | The authenticated user no longer exists |
 | `404` | `LINK_NOT_FOUND` | Link ID/code is unknown or the authenticated user does not own the link |
-| `409` | `USERNAME_TAKEN` | Username already exists; comparison is case-insensitive in storage |
+| `409` | `USERNAME_TAKEN` | Username is already registered |
 | `409` | `LINK_ALREADY_EXISTS` | The account already owns the canonical destination |
 | `409` | `LINK_LIMIT_REACHED` | The account already owns 50 links |
 | `422` | `INVALID_FORM_BODY` | JSON is malformed or a request field violates its contract |
@@ -77,8 +77,8 @@ Router and middleware failures use the same envelope:
 | `503` | `SERVICE_UNAVAILABLE` | Service is temporarily unavailable |
 | `500` | `INTERNAL_SERVER_ERROR` | Unexpected application or infrastructure failure |
 
-Unexpected failures never expose SQL, stack traces, password hashes, token
-verifiers, or other infrastructure details.
+Unexpected failures return the generic envelope without exposing stack traces,
+credentials, query details, or other service internals.
 
 ## Non-JSON responses
 
