@@ -184,6 +184,10 @@ The wide-screen shell is a three-region reference layout: a fixed 18.75rem navig
 
 At 72rem, the right-hand outline becomes persistent; below that width it collapses to a compact mobile table of contents. At 50rem, the left navigation changes from a full-width popover into the fixed rail. The signature request/response example uses two equal fluid columns with a 1rem gutter and collapses to one column at 50rem. Tables remain horizontally scrollable rather than compressing protocol values into unreadable wrapping.
 
+The 72ch reading measure applies to authored prose pages only. The interactive
+API reference owns its internal navigation and reading columns, so its splash
+container expands to the available viewport width at every breakpoint.
+
 Spacing follows a compact quarter-rem rhythm, with 1rem as the dominant content and container interval. Document blocks use a consistent 1rem vertical gap, while a heading that follows body content receives additional separation.
 
 **The Reference Before Promotion Rule.** The first viewport establishes navigation, the production base URL, and an executable request; it does not spend space on a marketing hero.
