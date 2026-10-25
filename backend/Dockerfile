@@ -12,7 +12,7 @@ COPY database ./database
 
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    GOMAXPROCS=1 GOMEMLIMIT=512MiB CGO_ENABLED=1 GOOS=linux \
+    GOMAXPROCS=1 CGO_ENABLED=1 GOOS=linux \
     go build -p=1 -trimpath -ldflags="-s -w" -o /out/api ./backend/cmd/api
 
 FROM alpine:3.23
