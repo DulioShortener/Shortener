@@ -60,6 +60,7 @@ func New(ctx context.Context, cfg config.Config) (*Server, error) {
 	userRepository := sqlite.NewUserRepository(db)
 	sessionRepository := sqlite.NewSessionRepository(db)
 	linkRepository := sqlite.NewLinkRepository(db)
+	reviewRepository := sqlite.NewReviewRepository(db)
 	passwordHasher := password.NewArgon2id()
 	tokenGenerator := token.NewGenerator()
 	clock := service.SystemClock{}
@@ -76,6 +77,7 @@ func New(ctx context.Context, cfg config.Config) (*Server, error) {
 	linkService := service.NewLinkService(
 		linkRepository, idGenerator, shortcode.NewGenerator(), clock,
 	)
+	reviewService := service.NewReviewService(reviewRepository, idGenerator, clock)
 
 	e := echo.New()
 	e.Validator = requestValidator
@@ -94,6 +96,7 @@ func New(ctx context.Context, cfg config.Config) (*Server, error) {
 		Root:  handler.NewRoot(applicationURL),
 		Users: handler.NewUser(userService), Auth: handler.NewAuth(authService),
 		Links: handler.NewLink(linkService, shortURLBase), Authentication: authentication,
+		Reviews: handler.NewReview(reviewService),
 	})
 
 	return &Server{
