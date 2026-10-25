@@ -25,11 +25,11 @@ func TestMigrationsApplyAndRollback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(results) != 3 {
-		t.Fatalf("expected 3 migrations, got %d", len(results))
+	if len(results) != 4 {
+		t.Fatalf("expected 4 migrations, got %d", len(results))
 	}
 
-	for _, name := range []string{"users", "auth_sessions", "links"} {
+	for _, name := range []string{"users", "auth_sessions", "links", "review_comments"} {
 		var count int
 		if err := db.QueryRowContext(ctx, `
 			SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?
@@ -41,7 +41,7 @@ func TestMigrationsApplyAndRollback(t *testing.T) {
 		}
 	}
 
-	for range 3 {
+	for range 4 {
 		if _, err := provider.Down(ctx); err != nil {
 			t.Fatal(err)
 		}
