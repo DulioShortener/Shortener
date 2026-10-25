@@ -37,13 +37,17 @@ one invalid field.
 | Status | Code | When it occurs |
 | ---: | --- | --- |
 | `400` | `INVALID_LINK_ID` | Delete path parameter is not a positive signed 63-bit decimal string |
+| `400` | `INVALID_REVIEW_ID` | Review path ID is not a positive signed 63-bit decimal string |
+| `400` | `INVALID_CURSOR` | Review page cursor is malformed |
 | `401` | `INVALID_CREDENTIALS` | Login username or password is incorrect |
 | `401` | `UNAUTHORIZED` | Bearer header is missing or malformed, or the session is unknown, expired, or revoked |
 | `404` | `USER_NOT_FOUND` | The authenticated user no longer exists |
 | `404` | `LINK_NOT_FOUND` | Link ID/code is unknown or the authenticated user does not own the link |
+| `404` | `REVIEW_NOT_FOUND` | Review or reply is absent, hidden, or not owned; also returned by `/reviews/me` when no active review exists |
 | `409` | `USERNAME_TAKEN` | Username is already registered |
 | `409` | `LINK_ALREADY_EXISTS` | The account already owns the canonical destination |
 | `409` | `LINK_LIMIT_REACHED` | The account already owns 50 links |
+| `409` | `REVIEW_ALREADY_EXISTS` | The account already has an active root review |
 | `422` | `INVALID_FORM_BODY` | JSON is malformed or a request field violates its contract |
 
 Malformed JSON reports the synthetic field `body`:

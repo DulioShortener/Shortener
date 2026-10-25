@@ -74,6 +74,35 @@ The raw token appears only in the login response and cannot be retrieved later.
 `GET /api/v1/links` returns an object with one always-present `links` array.
 The array contains zero to 50 [Link](#link) objects and is never `null`.
 
+## Product review requests
+
+`POST /api/v1/reviews` requires `body` and `rating`. `body` is 1–2000 Unicode
+characters, including at least one non-whitespace character; `rating` is an
+integer from 1 to 5. `POST /api/v1/reviews/{id}/replies` accepts `body` only.
+It rejects any `rating` property.
+
+## Review comment and page
+
+Root reviews and replies share these response fields:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `id` | decimal string | Comment Sonyflake ID |
+| `parent_id` | decimal string, optional | Direct parent, on replies only |
+| `author` | public user object or `null` | `id`, `username`, `display_name`; null on deleted replies |
+| `body` | string or `null` | Null on deleted replies |
+| `rating` | integer, optional | Present on active roots only |
+| `created_at` | RFC 3339 string | Creation time |
+| `deleted` | boolean | Whether this is a redacted reply placeholder |
+| `has_replies` | boolean, optional | Present to authenticated readers; direct children exist |
+| `replies` | page object, optional | Present on authenticated root reads; up to one reply preview |
+
+A page always has `items` (an array), `has_more` (boolean), and `next_cursor`
+(string or `null`). The outer page contains at most 50 roots or direct replies.
+The embedded preview page contains at most one reply. See
+[Reviews and replies](/concepts/reviews-and-replies/) for visibility and
+pagination behavior.
+
 ## Error
 
 Every JSON failure wraps one error body in an `errors` property:

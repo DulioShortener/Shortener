@@ -212,6 +212,29 @@ Each concurrently running API instance requires a unique 16-bit Sonyflake
 machine ID. Reusing an ID concurrently can generate identifier collisions and
 is a deployment configuration error that a local generator cannot detect.
 
+## Product reviews and replies
+
+`review_comments` stores both rated roots and unrated replies. A nullable
+`parent_id` marks roots; parent links provide arbitrary reply depth without a
+stored root ID. A partial unique SQLite index permits only one active root per
+user and releases that slot when the root is soft-deleted. SQL checks require a
+1–5 rating on roots and no rating on replies. Ancestor traversal identifies a
+reply's root when checking thread visibility. The reply insert validates the
+target and active root in the same SQL statement, preventing insertion into an
+already hidden thread. A later root deletion hides any replies posted earlier.
+
+Public GET requests list or retrieve active roots only. An optional valid
+bearer session adds one direct reply preview per root and permits direct reply
+reads. Invalid supplied bearer tokens are rejected. `GET /reviews/{id}/replies`
+requires authentication and returns a flat page of direct children with a
+`has_replies` flag. Root pages are newest first, reply pages oldest first, and
+both use fixed 50-item keyset pages with plain timestamp-and-ID cursors.
+
+Deleting a root hides the whole thread and releases the user's review slot.
+Deleting a reply leaves a redacted tombstone so descendants remain accessible;
+new replies to that tombstone are rejected. The same item routes address roots
+and replies, while the service and database enforce their distinct rules.
+
 ## Persistence and migrations
 
 SQLite access uses the CGO-backed `github.com/mattn/go-sqlite3` driver. The

@@ -63,6 +63,13 @@ generate client examples, and send requests to production.
 | `POST` | `/api/v1/links` | Bearer | Create a short link |
 | `GET` | `/api/v1/links` | Bearer | List the current account's links |
 | `DELETE` | `/api/v1/links/{id}` | Bearer | Delete an owned link |
+| `GET` | `/api/v1/reviews` | Optional bearer | List roots; bearer adds reply previews |
+| `POST` | `/api/v1/reviews` | Bearer | Create a rated root review |
+| `GET` | `/api/v1/reviews/me` | Bearer | Get your active review |
+| `GET` | `/api/v1/reviews/{id}` | Optional bearer | Read a root or an authenticated reply |
+| `DELETE` | `/api/v1/reviews/{id}` | Bearer | Soft-delete owned content |
+| `GET` | `/api/v1/reviews/{id}/replies` | Bearer | List direct replies |
+| `POST` | `/api/v1/reviews/{id}/replies` | Bearer | Post a text reply |
 | `GET` | `/r/{code}` | No | Redirect to a stored destination |
 | `GET`, `HEAD` | `/` | No | Redirect to the browser application |
 

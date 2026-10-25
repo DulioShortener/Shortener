@@ -15,6 +15,9 @@ from Markdown and OpenAPI.
 - Creates, lists, and deletes short links.
 - Redirects public short URLs without loading the frontend.
 - Limits each account to 50 links and rejects duplicate destinations.
+- Lets users post one active 1–5-star product review, reply in threads, and
+  soft-delete their own content. Public readers see root reviews; bearer
+  sessions unlock replies.
 
 Implementation and design details are documented in
 [ARCHITECTURE.md](ARCHITECTURE.md).

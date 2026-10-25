@@ -12,7 +12,8 @@ https://3dreamstudio.com.br/api/v1
 ```
 
 Authentication commands use `/api/v1/auth`; account resources use
-`/api/v1/users`; link resources use `/api/v1/links`. The older-looking
+`/api/v1/users`; link resources use `/api/v1/links`; product reviews use
+`/api/v1/reviews`. The older-looking
 `/api/v1/login` path does not exist and returns `404 ROUTE_NOT_FOUND`.
 
 Two browser-facing routes deliberately sit outside the API prefix:
@@ -30,7 +31,7 @@ media types with `415 UNSUPPORTED_MEDIA_TYPE`.
 The global request-body limit is 65,536 bytes (64 KiB). An oversized body
 returns `413 REQUEST_BODY_TOO_LARGE` before an endpoint processes it.
 
-## Account and link limits
+## Account, link, and review limits
 
 | Limit | Value |
 | --- | ---: |
@@ -40,6 +41,11 @@ returns `413 REQUEST_BODY_TOO_LARGE` before an endpoint processes it.
 | Password length on registration | 8–128 Unicode characters |
 | Username length | 2–32 ASCII characters |
 | Display-name length | 2–32 Unicode characters |
+| Active root reviews per account | 1 |
+| Review or reply body | 1–2000 Unicode characters, not blank |
+| Root rating | Integer 1–5 |
+| Root or direct-reply page | 50 items |
+| Authenticated root reply preview | 1 direct reply |
 
 ## Authentication rate limit
 
