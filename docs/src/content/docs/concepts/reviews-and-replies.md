@@ -8,11 +8,15 @@ review has text and a rating from 1 to 5. A reply has text only. Replies may
 target a root or another reply, so threads can continue to any depth.
 
 Each account may have one active root review. Other accounts can reply to it,
-and the reviewer may also join the thread. Deleting a root review soft-deletes
-it, hides all its replies, and allows its author to create a new root review.
-Deleting a reply leaves a placeholder with `deleted: true`, `body: null`, and
-`author: null`; its existing descendants remain readable. A deleted reply
+and the reviewer may also join the thread. Deleting a root review hides it and
+all its replies, and allows its author to create a new root review.
+Deleting a reply leaves a placeholder with `body: null`; its existing
+descendants remain readable. A deleted reply
 cannot receive new direct replies. Content cannot be edited.
+
+Every review and reply includes `author_id` as a decimal string, including in
+reply previews and placeholders. Responses never include user or author
+objects, profile fields, or deletion flags and timestamps.
 
 ## Reading reviews
 
@@ -58,6 +62,9 @@ Creating a root requires `POST /api/v1/reviews` with a `body` and integer
 `rating`. The body must contain 1–2000 Unicode characters and at least one
 non-whitespace character. A second active root returns
 `409 REVIEW_ALREADY_EXISTS`.
+
+A rating outside 1–5 returns `422 INVALID_FORM_BODY` with
+`errors.fields.rating: "This value must be in range of 1 and 5"`.
 
 To reply, `POST /api/v1/reviews/{id}/replies` with a `body` and a bearer token.
 The route accepts any active root or reply. A `rating` property is invalid for
