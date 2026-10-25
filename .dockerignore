@@ -1,5 +1,7 @@
 .git
 .agents
+.env
+.env.*
 data/*
 !data/.gitkeep
 frontend/node_modules
