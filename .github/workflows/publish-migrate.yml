@@ -1,0 +1,83 @@
+name: Publish migration image
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - .github/workflows/publish-migrate.yml
+      - .dockerignore
+      - database/**
+      - go.mod
+      - go.sum
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-migrate
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/dulioshortener/dulio-shortener-migrate
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and check image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: database/Dockerfile
+          load: true
+          tags: ${{ env.IMAGE }}:test
+          labels: org.opencontainers.image.source=https://github.com/DulioShortener/Shortener
+
+      - name: Check image contents
+        run: |
+          docker run --rm --entrypoint sh "${IMAGE}:test" -c \
+            'test -x /app/migrate && test ! -e /app/.env && test ! -e /data/dulio.db'
+
+      - name: Publish image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: database/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+            ${{ env.IMAGE }}:latest
+          labels: org.opencontainers.image.source=https://github.com/DulioShortener/Shortener
+
+      - name: Check anonymous pull access
+        run: |
+          anonymous_config="$(mktemp -d)"
+          for attempt in {1..6}; do
+            if DOCKER_CONFIG="$anonymous_config" docker manifest inspect "${IMAGE}:sha-${GITHUB_SHA}" > /dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo '::error::Migration image is not anonymously pullable. Set its organization package visibility to Public, then rerun.'
+          exit 1
