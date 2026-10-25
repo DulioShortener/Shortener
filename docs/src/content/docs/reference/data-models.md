@@ -88,14 +88,17 @@ Root reviews and replies share these response fields:
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `id` | decimal string | Comment Sonyflake ID |
+| `author_id` | decimal string | Author's user ID, including on reply placeholders |
 | `parent_id` | decimal string, optional | Direct parent, on replies only |
-| `author` | public user object or `null` | `id`, `username`, `display_name`; null on deleted replies |
 | `body` | string or `null` | Null on deleted replies |
 | `rating` | integer, optional | Present on active roots only |
 | `created_at` | RFC 3339 string | Creation time |
-| `deleted` | boolean | Whether this is a redacted reply placeholder |
 | `has_replies` | boolean, optional | Present to authenticated readers; direct children exist |
 | `replies` | page object, optional | Present on authenticated root reads; up to one reply preview |
+
+Every comment includes a flat `author_id`. User and author objects, profile
+fields, and deletion metadata are never included, including on reply
+placeholders and nested previews.
 
 A page always has `items` (an array), `has_more` (boolean), and `next_cursor`
 (string or `null`). The outer page contains at most 50 roots or direct replies.
