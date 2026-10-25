@@ -497,7 +497,7 @@ paths:
     delete:
       operationId: deleteReviewComment
       tags: [Reviews]
-      summary: Soft-delete an owned review or reply
+      summary: Delete an owned review or reply
       description: |
         Deleting a root hides its whole thread and frees the author to post a
         new rated review. Deleting a reply redacts that reply and preserves its
@@ -835,6 +835,7 @@ components:
           type: integer
           minimum: 1
           maximum: 5
+          description: Values outside this range return the field error "This value must be in range of 1 and 5".
     ReviewReplyCreate:
       type: object
       required: [body]
@@ -844,33 +845,21 @@ components:
           minLength: 1
           maxLength: 2000
           description: Text containing a non-whitespace character. Rating is forbidden, including null.
-    ReviewAuthor:
-      type: object
-      additionalProperties: false
-      required: [id, username, display_name]
-      properties:
-        id:
-          $ref: '#/components/schemas/SonyflakeId'
-        username:
-          type: string
-        display_name:
-          type: [string, 'null']
     ReviewComment:
       type: object
       additionalProperties: false
-      required: [id, author, body, created_at, deleted]
+      required: [id, author_id, body, created_at]
       properties:
         id:
           $ref: '#/components/schemas/SonyflakeId'
+        author_id:
+          allOf:
+            - $ref: '#/components/schemas/SonyflakeId'
+          description: Author's user ID, including on reply placeholders.
         parent_id:
           allOf:
             - $ref: '#/components/schemas/SonyflakeId'
           description: Present on replies only.
-        author:
-          oneOf:
-            - $ref: '#/components/schemas/ReviewAuthor'
-            - type: 'null'
-          description: Null for deleted reply placeholders.
         body:
           type: [string, 'null']
           description: Null for deleted reply placeholders.
@@ -881,8 +870,6 @@ components:
           description: Present on active roots only.
         created_at:
           $ref: '#/components/schemas/Timestamp'
-        deleted:
-          type: boolean
         has_replies:
           type: boolean
           description: Present only to authenticated readers; true if the item has direct children.
