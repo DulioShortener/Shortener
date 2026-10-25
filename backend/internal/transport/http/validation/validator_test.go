@@ -1,12 +1,42 @@
 package validation_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/DulioShortener/Shortener/backend/internal/transport/http/request"
 	"github.com/DulioShortener/Shortener/backend/internal/transport/http/validation"
 )
+
+func TestReviewRatingValidation(t *testing.T) {
+	requestValidator, err := validation.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, rating := range []int{-1, 0, 1, 2, 3, 4, 5, 6} {
+		t.Run(fmt.Sprintf("rating=%d", rating), func(t *testing.T) {
+			err := requestValidator.Validate(request.ReviewCreate{Body: "A review", Rating: &rating})
+			if rating >= 1 && rating <= 5 {
+				if err != nil {
+					t.Fatalf("valid rating rejected: %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatal("expected rating range error")
+			}
+			if message := validation.InvalidForm(err).Fields["rating"]; message != "This value must be in range of 1 and 5" {
+				t.Fatalf("unexpected range message: %q", message)
+			}
+		})
+	}
+	if err := requestValidator.Validate(request.ReviewCreate{Body: "A review"}); err == nil {
+		t.Fatal("missing rating accepted")
+	} else if message := validation.InvalidForm(err).Fields["rating"]; message != "This value is required" {
+		t.Fatalf("unexpected missing rating message: %q", message)
+	}
+}
 
 func TestUserCreateValidation(t *testing.T) {
 	requestValidator, err := validation.New()

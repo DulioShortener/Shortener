@@ -23,6 +23,7 @@ type Validator struct {
 
 func New() (*Validator, error) {
 	validate := validator.New(validator.WithRequiredStructEnabled())
+	validate.RegisterAlias("rating", "min=1,max=5")
 	validate.RegisterTagNameFunc(func(field reflect.StructField) string {
 		name := strings.SplitN(field.Tag.Get("json"), ",", 2)[0]
 		if name == "" || name == "-" {
@@ -106,6 +107,8 @@ func validationMessage(field validator.FieldError) string {
 	switch field.Tag() {
 	case "required":
 		return "This value is required"
+	case "rating":
+		return "This value must be in range of 1 and 5"
 	case "min":
 		return "This value must be at least " + field.Param() + " characters long"
 	case "max":
