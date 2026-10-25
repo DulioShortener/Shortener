@@ -38,11 +38,17 @@ For native development:
 
 ## 🏗️ How to build
 
-Build the API and migration container images from the repository root:
+Build local API and migration images from the repository root when working on
+their Dockerfiles:
 
 ```sh
-docker compose build api migrate
+docker build -f backend/Dockerfile -t dulio-shortener-api:local .
+docker build -f database/Dockerfile -t dulio-shortener-migrate:local .
 ```
+
+Set `DULIO_API_IMAGE=dulio-shortener-api:local` and
+`DULIO_MIGRATE_IMAGE=dulio-shortener-migrate:local` in `.env` to run those
+images through Compose. By default, Compose references the published GHCR images.
 
 Compile all Go packages natively:
 
@@ -91,6 +97,16 @@ Copy-Item .env.example .env
 Review `.env` before starting. On Linux, `DULIO_UID` and `DULIO_GID` must
 match the user that owns the `data` directory.
 
+Pull the published images before applying migrations or starting the API:
+
+```sh
+docker compose pull api migrate
+```
+
+You can select a commit build by setting `DULIO_API_IMAGE` or
+`DULIO_MIGRATE_IMAGE` to its `sha-<commit>` tag. For an immutable image
+reference, pin the published digest with `@sha256:<digest>`.
+
 ### 2️⃣ Add the TLS certificate
 
 Create `data/tls` and place the certificate files expected by the API there:
@@ -127,7 +143,7 @@ applies migrations automatically.
 ### 4️⃣ Start the API
 
 ```sh
-docker compose up --build -d api
+docker compose up -d api
 ```
 
 View its logs or stop it with:
