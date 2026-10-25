@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Dulio Shortener API
   version: 1.0.0
-  summary: Create accounts, authenticate, and manage short links.
+  summary: Create accounts, manage short links, and discuss the product.
   description: |
     The Dulio Shortener API is a small JSON API for creating account-scoped
     short links. All identifiers are Sonyflake values encoded as decimal
@@ -24,6 +24,8 @@ tags:
     description: Opaque bearer-session creation and revocation.
   - name: Links
     description: Account-scoped short-link management.
+  - name: Reviews
+    description: Product ratings and threaded comments.
   - name: Public routing
     description: Browser-facing redirects outside the JSON API.
 paths:
@@ -384,6 +386,198 @@ paths:
           $ref: '#/components/responses/LinkNotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/v1/reviews:
+    get:
+      operationId: listReviews
+      tags: [Reviews]
+      summary: List active product reviews
+      description: |
+        Returns at most 50 root reviews, newest first. Anonymous readers receive
+        roots only. A valid bearer token adds one direct reply preview to each
+        root. An invalid supplied token is rejected.
+      security:
+        - {}
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReviewCursor'
+      responses:
+        '200':
+          description: A page of root reviews.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewPage'
+        '400':
+          $ref: '#/components/responses/InvalidReviewCursor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createReview
+      tags: [Reviews]
+      summary: Create one active rated review
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+      responses:
+        '201':
+          description: Review created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewComment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/ReviewAlreadyExists'
+        '413':
+          $ref: '#/components/responses/RequestBodyTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/InvalidFormBody'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/reviews/me:
+    get:
+      operationId: getMyReview
+      tags: [Reviews]
+      summary: Get the current user's active review
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active root review with one reply preview.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewComment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ReviewNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/reviews/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    get:
+      operationId: getReviewComment
+      tags: [Reviews]
+      summary: Get a root review or reply
+      description: |
+        Anonymous readers can read active roots only. Authenticated readers can
+        read replies. A root includes one direct reply preview; a reply does not
+        embed its children. Deleted replies retain a redacted placeholder while
+        their root remains active.
+      security:
+        - {}
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Review or reply.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewComment'
+        '400':
+          $ref: '#/components/responses/InvalidReviewId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ReviewNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteReviewComment
+      tags: [Reviews]
+      summary: Soft-delete an owned review or reply
+      description: |
+        Deleting a root hides its whole thread and frees the author to post a
+        new rated review. Deleting a reply redacts that reply and preserves its
+        descendants. Unowned items are reported as not found.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Deleted successfully; no response body.
+        '400':
+          $ref: '#/components/responses/InvalidReviewId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ReviewNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/v1/reviews/{id}/replies:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    get:
+      operationId: listReviewReplies
+      tags: [Reviews]
+      summary: List direct replies to a review or reply
+      description: |
+        Requires authentication. Returns at most 50 direct children, oldest
+        first, with `has_replies` on each child. Children are never embedded.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReviewCursor'
+      responses:
+        '200':
+          description: Direct reply page.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewPage'
+        '400':
+          $ref: '#/components/responses/InvalidReviewCursor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ReviewNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createReviewReply
+      tags: [Reviews]
+      summary: Reply to an active review or reply
+      description: The target must be active and belong to an active root thread.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewReplyCreate'
+      responses:
+        '201':
+          description: Reply created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewComment'
+        '400':
+          $ref: '#/components/responses/InvalidReviewId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ReviewNotFound'
+        '413':
+          $ref: '#/components/responses/RequestBodyTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/InvalidFormBody'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /r/{code}:
     get:
       operationId: resolveShortLink
@@ -423,6 +617,21 @@ components:
       schema:
         $ref: '#/components/schemas/SonyflakeId'
       example: '229605206530457602'
+    ReviewId:
+      name: id
+      in: path
+      required: true
+      description: Positive decimal identifier of a root review or reply.
+      schema:
+        $ref: '#/components/schemas/SonyflakeId'
+    ReviewCursor:
+      name: cursor
+      in: query
+      required: false
+      description: Plain `<created_at_unix_milliseconds>:<id>` position returned as `next_cursor`.
+      schema:
+        type: string
+        pattern: '^[1-9][0-9]*:[1-9][0-9]*$'
     ShortCode:
       name: code
       in: path
@@ -613,6 +822,90 @@ components:
           description: Links ordered by creation time descending, then ID descending.
           items:
             $ref: '#/components/schemas/Link'
+    ReviewCreate:
+      type: object
+      required: [body, rating]
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Text containing a non-whitespace character.
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+    ReviewReplyCreate:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Text containing a non-whitespace character. Rating is forbidden, including null.
+    ReviewAuthor:
+      type: object
+      additionalProperties: false
+      required: [id, username, display_name]
+      properties:
+        id:
+          $ref: '#/components/schemas/SonyflakeId'
+        username:
+          type: string
+        display_name:
+          type: [string, 'null']
+    ReviewComment:
+      type: object
+      additionalProperties: false
+      required: [id, author, body, created_at, deleted]
+      properties:
+        id:
+          $ref: '#/components/schemas/SonyflakeId'
+        parent_id:
+          allOf:
+            - $ref: '#/components/schemas/SonyflakeId'
+          description: Present on replies only.
+        author:
+          oneOf:
+            - $ref: '#/components/schemas/ReviewAuthor'
+            - type: 'null'
+          description: Null for deleted reply placeholders.
+        body:
+          type: [string, 'null']
+          description: Null for deleted reply placeholders.
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Present on active roots only.
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        deleted:
+          type: boolean
+        has_replies:
+          type: boolean
+          description: Present only to authenticated readers; true if the item has direct children.
+        replies:
+          allOf:
+            - $ref: '#/components/schemas/ReviewPage'
+          description: Present only on roots read with valid bearer authentication; at most one direct preview.
+    ReviewPage:
+      type: object
+      additionalProperties: false
+      required: [items, has_more, next_cursor]
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ReviewComment'
+        has_more:
+          type: boolean
+          description: More direct siblings exist after this page.
+        next_cursor:
+          type: [string, 'null']
+          description: Continue after the last item when `has_more` is true.
     ApiError:
       type: object
       additionalProperties: false
@@ -641,6 +934,30 @@ components:
           example:
             username: Use 2-32 lowercase letters, digits, underscores, or periods without consecutive periods
   responses:
+    InvalidReviewId:
+      description: Review ID is not a positive signed 63-bit decimal string.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    InvalidReviewCursor:
+      description: Cursor is malformed or outside the supported integer range.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ReviewNotFound:
+      description: The item is absent, hidden, or not owned by the deleting user.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ReviewAlreadyExists:
+      description: The user already has an active root review.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
     InvalidFormBody:
       description: The JSON body is malformed or one or more fields are invalid.
       headers:
