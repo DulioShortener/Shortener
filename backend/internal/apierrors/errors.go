@@ -75,6 +75,12 @@ func From(err error) *Error {
 		return &Error{Status: http.StatusConflict, Code: "LINK_LIMIT_REACHED", Message: "An account can have at most 50 links", Cause: err}
 	case errors.Is(err, service.ErrLinkNotFound):
 		return &Error{Status: http.StatusNotFound, Code: "LINK_NOT_FOUND", Message: "Link not found", Cause: err}
+	case errors.Is(err, service.ErrReviewAlreadyExists):
+		return &Error{Status: http.StatusConflict, Code: "REVIEW_ALREADY_EXISTS", Message: "You already have an active review", Cause: err}
+	case errors.Is(err, service.ErrReviewNotFound):
+		return &Error{Status: http.StatusNotFound, Code: "REVIEW_NOT_FOUND", Message: "Review comment not found", Cause: err}
+	case errors.Is(err, service.ErrInvalidReview):
+		return &Error{Status: http.StatusUnprocessableEntity, Code: "INVALID_FORM_BODY", Message: "Review content or rating is invalid", Cause: err}
 	default:
 		return &Error{Status: http.StatusInternalServerError, Code: "INTERNAL_SERVER_ERROR", Message: "An unexpected error occurred", Cause: err}
 	}

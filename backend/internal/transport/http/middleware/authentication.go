@@ -38,6 +38,16 @@ func (m *Authentication) Require(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+// Optional authenticates a supplied bearer token while allowing requests with no Authorization header.
+func (m *Authentication) Optional(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c *echo.Context) error {
+		if c.Request().Header.Get("Authorization") == "" {
+			return next(c)
+		}
+		return m.Require(next)(c)
+	}
+}
+
 func Principal(ctx context.Context) (service.Principal, bool) {
 	principal, ok := ctx.Value(principalContextKey{}).(service.Principal)
 	return principal, ok
