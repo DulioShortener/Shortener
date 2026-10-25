@@ -2,9 +2,7 @@ name: dulio-shortener
 
 services:
   api:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: "${DULIO_API_IMAGE:-ghcr.io/dulioshortener/dulio-shortener-api:latest}"
     restart: unless-stopped
     user: "${DULIO_UID:-1000}:${DULIO_GID:-1000}"
     environment:
@@ -20,9 +18,7 @@ services:
 
   migrate:
     profiles: ["tools"]
-    build:
-      context: .
-      dockerfile: database/Dockerfile
+    image: "${DULIO_MIGRATE_IMAGE:-ghcr.io/dulioshortener/dulio-shortener-migrate:latest}"
     user: "${DULIO_UID:-1000}:${DULIO_GID:-1000}"
     environment:
       DATABASE_PATH: /data/dulio.db
