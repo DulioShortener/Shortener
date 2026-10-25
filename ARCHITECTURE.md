@@ -229,6 +229,10 @@ reads. Invalid supplied bearer tokens are rejected. `GET /reviews/{id}/replies`
 requires authentication and returns a flat page of direct children with a
 `has_replies` flag. Root pages are newest first, reply pages oldest first, and
 both use fixed 50-item keyset pages with plain timestamp-and-ID cursors.
+Review transport responses include a flat `author_id` string and omit author
+objects, profile fields, and deletion metadata on every route, including nested
+previews and redacted replies.
+Rating range failures use a dedicated numeric validation message for 1–5.
 
 Deleting a root hides the whole thread and releases the user's review slot.
 Deleting a reply leaves a redacted tombstone so descendants remain accessible;
