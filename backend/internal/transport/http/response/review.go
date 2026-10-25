@@ -7,22 +7,15 @@ import (
 	"github.com/DulioShortener/Shortener/backend/internal/service"
 )
 
-type ReviewAuthor struct {
-	ID          string  `json:"id"`
-	Username    string  `json:"username"`
-	DisplayName *string `json:"display_name"`
-}
-
 type ReviewComment struct {
-	ID         string        `json:"id"`
-	ParentID   *string       `json:"parent_id,omitempty"`
-	Author     *ReviewAuthor `json:"author"`
-	Body       *string       `json:"body"`
-	Rating     *int          `json:"rating,omitempty"`
-	CreatedAt  string        `json:"created_at"`
-	Deleted    bool          `json:"deleted"`
-	HasReplies *bool         `json:"has_replies,omitempty"`
-	Replies    *ReviewPage   `json:"replies,omitempty"`
+	ID         string      `json:"id"`
+	AuthorID   string      `json:"author_id"`
+	ParentID   *string     `json:"parent_id,omitempty"`
+	Body       *string     `json:"body"`
+	Rating     *int        `json:"rating,omitempty"`
+	CreatedAt  string      `json:"created_at"`
+	HasReplies *bool       `json:"has_replies,omitempty"`
+	Replies    *ReviewPage `json:"replies,omitempty"`
 }
 
 type ReviewPage struct {
@@ -34,17 +27,13 @@ type ReviewPage struct {
 func ReviewCommentFromEntity(comment entity.ReviewComment, authenticated bool) ReviewComment {
 	result := ReviewComment{
 		ID: strconv.FormatInt(comment.ID, 10), CreatedAt: formatTime(comment.CreatedAt),
-		Deleted: comment.DeletedAt != nil,
+		AuthorID: strconv.FormatInt(comment.UserID, 10),
 	}
 	if comment.ParentID != nil {
 		parentID := strconv.FormatInt(*comment.ParentID, 10)
 		result.ParentID = &parentID
 	}
 	if comment.DeletedAt == nil {
-		result.Author = &ReviewAuthor{
-			ID: strconv.FormatInt(comment.UserID, 10), Username: comment.Username,
-			DisplayName: comment.DisplayName,
-		}
 		result.Body = &comment.Body
 		result.Rating = comment.Rating
 	}

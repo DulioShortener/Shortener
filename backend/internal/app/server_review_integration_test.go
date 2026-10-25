@@ -1,13 +1,17 @@
 package app_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/DulioShortener/Shortener/backend/internal/apierrors"
 	"github.com/DulioShortener/Shortener/backend/internal/app"
 	"github.com/DulioShortener/Shortener/backend/internal/config"
 	"github.com/DulioShortener/Shortener/database"
@@ -40,7 +44,7 @@ func TestReviewHTTPVisibilityOwnershipAndSoftDeletion(t *testing.T) {
 	}
 	defer server.Close()
 	target := server.Handler()
-	registerAndLogin := func(username string) string {
+	registerAndLogin := func(username string) (string, string) {
 		t.Helper()
 		created := performJSON(t, target, http.MethodPost, "/api/v1/users", "", map[string]any{
 			"username": username, "password": "Password1!",
@@ -56,12 +60,15 @@ func TestReviewHTTPVisibilityOwnershipAndSoftDeletion(t *testing.T) {
 		}
 		var body struct {
 			Token string `json:"token"`
+			User  struct {
+				ID string `json:"id"`
+			} `json:"user"`
 		}
 		decode(t, login.Body, &body)
-		return body.Token
+		return body.Token, body.User.ID
 	}
-	ownerToken := registerAndLogin("reviewowner")
-	otherToken := registerAndLogin("reviewother")
+	ownerToken, ownerID := registerAndLogin("reviewowner")
+	otherToken, otherID := registerAndLogin("reviewother")
 	assertAPIError(t, performJSON(t, target, http.MethodGet, "/api/v1/reviews?cursor=bad", "", nil),
 		http.StatusBadRequest, "INVALID_CURSOR")
 	assertAPIError(t, performJSON(t, target, http.MethodGet, "/api/v1/reviews/0", "", nil),
@@ -76,8 +83,15 @@ func TestReviewHTTPVisibilityOwnershipAndSoftDeletion(t *testing.T) {
 		{"body": "Nice"}, {"body": "Nice", "rating": 6},
 		{"body": strings.Repeat("a", 2001), "rating": 5},
 	} {
-		assertAPIError(t, performJSON(t, target, http.MethodPost, "/api/v1/reviews", ownerToken, invalid),
-			http.StatusUnprocessableEntity, "INVALID_FORM_BODY")
+		result := performJSON(t, target, http.MethodPost, "/api/v1/reviews", ownerToken, invalid)
+		if rating, ok := invalid["rating"].(int); ok && (rating < 1 || rating > 5) {
+			var body apierrors.Response
+			decode(t, bytes.NewReader(result.Body.Bytes()), &body)
+			if body.Errors.Fields["rating"] != "This value must be in range of 1 and 5" {
+				t.Fatalf("unexpected rating error: %+v", body.Errors.Fields)
+			}
+		}
+		assertAPIError(t, result, http.StatusUnprocessableEntity, "INVALID_FORM_BODY")
 	}
 	created := performJSON(t, target, http.MethodPost, "/api/v1/reviews", ownerToken, map[string]any{
 		"body": "Nice", "rating": 5,
@@ -86,11 +100,15 @@ func TestReviewHTTPVisibilityOwnershipAndSoftDeletion(t *testing.T) {
 		t.Fatalf("create review: %d %s", created.Code, created.Body.String())
 	}
 	var root struct {
-		ID string `json:"id"`
+		ID       string `json:"id"`
+		AuthorID string `json:"author_id"`
 	}
-	decode(t, created.Body, &root)
+	decode(t, bytes.NewReader(created.Body.Bytes()), &root)
 	if root.ID == "" {
 		t.Fatal("root ID missing")
+	}
+	if root.AuthorID != ownerID {
+		t.Fatalf("root author_id=%q, want %q", root.AuthorID, ownerID)
 	}
 	assertAPIError(t, performJSON(t, target, http.MethodPost, "/api/v1/reviews", ownerToken, map[string]any{
 		"body": "Again", "rating": 4,
@@ -108,9 +126,13 @@ func TestReviewHTTPVisibilityOwnershipAndSoftDeletion(t *testing.T) {
 		t.Fatalf("create reply: %d %s", replied.Code, replied.Body.String())
 	}
 	var reply struct {
-		ID string `json:"id"`
+		ID       string `json:"id"`
+		AuthorID string `json:"author_id"`
 	}
-	decode(t, replied.Body, &reply)
+	decode(t, bytes.NewReader(replied.Body.Bytes()), &reply)
+	if reply.AuthorID != otherID {
+		t.Fatalf("reply author_id=%q, want %q", reply.AuthorID, otherID)
+	}
 	deep := performJSON(t, target, http.MethodPost, "/api/v1/reviews/"+reply.ID+"/replies", ownerToken, map[string]any{
 		"body": "Thanks",
 	})
@@ -126,12 +148,13 @@ func TestReviewHTTPVisibilityOwnershipAndSoftDeletion(t *testing.T) {
 		if result.Code != http.StatusOK {
 			t.Fatalf("read %s: %d %s", path, result.Code, result.Body.String())
 		}
+		assertNoReviewMetadata(t, result.Body.Bytes())
 	}
 	publicList := performJSON(t, target, http.MethodGet, "/api/v1/reviews", "", nil)
 	var publicBody struct {
 		Items []map[string]any `json:"items"`
 	}
-	decode(t, publicList.Body, &publicBody)
+	decode(t, bytes.NewReader(publicList.Body.Bytes()), &publicBody)
 	if len(publicBody.Items) != 1 {
 		t.Fatalf("public roots: %d", len(publicBody.Items))
 	}
@@ -150,7 +173,7 @@ func TestReviewHTTPVisibilityOwnershipAndSoftDeletion(t *testing.T) {
 			} `json:"replies"`
 		} `json:"items"`
 	}
-	decode(t, authList.Body, &authenticatedBody)
+	decode(t, bytes.NewReader(authList.Body.Bytes()), &authenticatedBody)
 	if len(authenticatedBody.Items) != 1 || len(authenticatedBody.Items[0].Replies.Items) != 1 ||
 		authenticatedBody.Items[0].Replies.Items[0].ID != reply.ID {
 		t.Fatalf("authenticated preview missing: %+v", authenticatedBody)
@@ -161,7 +184,7 @@ func TestReviewHTTPVisibilityOwnershipAndSoftDeletion(t *testing.T) {
 	var childrenBody struct {
 		Items []map[string]any `json:"items"`
 	}
-	decode(t, children.Body, &childrenBody)
+	decode(t, bytes.NewReader(children.Body.Bytes()), &childrenBody)
 	if len(childrenBody.Items) != 1 || childrenBody.Items[0]["has_replies"] != true {
 		t.Fatalf("direct replies or child flag missing: %+v", childrenBody)
 	}
@@ -176,9 +199,28 @@ func TestReviewHTTPVisibilityOwnershipAndSoftDeletion(t *testing.T) {
 	}
 	tombstone := performJSON(t, target, http.MethodGet, "/api/v1/reviews/"+reply.ID, ownerToken, nil)
 	var deletedBody map[string]any
-	decode(t, tombstone.Body, &deletedBody)
-	if deletedBody["body"] != nil || deletedBody["author"] != nil || deletedBody["deleted"] != true {
+	decode(t, bytes.NewReader(tombstone.Body.Bytes()), &deletedBody)
+	if body, present := deletedBody["body"]; !present || body != nil {
 		t.Fatalf("tombstone leaked content: %+v", deletedBody)
+	}
+	if deletedBody["author_id"] != otherID {
+		t.Fatalf("reply placeholder lost author_id: %+v", deletedBody)
+	}
+	for _, result := range [][]byte{
+		created.Body.Bytes(), replied.Body.Bytes(), deep.Body.Bytes(), publicList.Body.Bytes(),
+		authList.Body.Bytes(), children.Body.Bytes(), tombstone.Body.Bytes(),
+	} {
+		assertNoReviewMetadata(t, result)
+	}
+	for _, path := range []string{
+		"/api/v1/reviews", "/api/v1/reviews/me", rootPath,
+		rootPath + "/replies", "/api/v1/reviews/" + reply.ID + "/replies",
+	} {
+		result := performJSON(t, target, http.MethodGet, path, ownerToken, nil)
+		if result.Code != http.StatusOK {
+			t.Fatalf("read after deleting reply %s: %d %s", path, result.Code, result.Body.String())
+		}
+		assertNoReviewMetadata(t, result.Body.Bytes())
 	}
 	if result := performJSON(t, target, http.MethodDelete, rootPath, ownerToken, nil); result.Code != http.StatusNoContent {
 		t.Fatalf("delete root: %d %s", result.Code, result.Body.String())
@@ -197,4 +239,38 @@ func TestReviewHTTPVisibilityOwnershipAndSoftDeletion(t *testing.T) {
 	if newRoot.Code != http.StatusCreated {
 		t.Fatalf("repost review: %d %s", newRoot.Code, newRoot.Body.String())
 	}
+	assertNoReviewMetadata(t, newRoot.Body.Bytes())
+}
+
+func assertNoReviewMetadata(t *testing.T, body []byte) {
+	t.Helper()
+	var value any
+	if err := json.Unmarshal(body, &value); err != nil {
+		t.Fatal(err)
+	}
+	var check func(any)
+	check = func(value any) {
+		switch value := value.(type) {
+		case map[string]any:
+			if _, comment := value["body"]; comment {
+				authorID, ok := value["author_id"].(string)
+				id, err := strconv.ParseInt(authorID, 10, 64)
+				if !ok || err != nil || id <= 0 || strconv.FormatInt(id, 10) != authorID {
+					t.Errorf("review response has invalid author_id: %s", body)
+				}
+			}
+			for key, child := range value {
+				switch key {
+				case "user", "author", "user_id", "username", "display_name", "delete", "deleted", "deleted_at":
+					t.Errorf("review response exposed %q: %s", key, body)
+				}
+				check(child)
+			}
+		case []any:
+			for _, child := range value {
+				check(child)
+			}
+		}
+	}
+	check(value)
 }
