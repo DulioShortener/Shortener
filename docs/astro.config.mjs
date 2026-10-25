@@ -36,6 +36,7 @@ export default defineConfig({
             { label: 'Authentication', slug: 'guides/authentication' },
             { label: 'IDs and timestamps', slug: 'concepts/ids-and-timestamps' },
             { label: 'Links and URLs', slug: 'concepts/links-and-urls' },
+            { label: 'Reviews and replies', slug: 'concepts/reviews-and-replies' },
           ],
         },
         {
