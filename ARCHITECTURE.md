@@ -255,6 +255,15 @@ SQLite file with the embedded migrations applied.
 Docker confines GCC and musl development headers to discarded builder stages.
 The API runtime image contains the linked application binary, Alpine's musl
 runtime, and the CA certificate bundle required for trusted outbound HTTPS.
+Separate GitHub Actions workflows publish the API and migration images to the
+`DulioShortener` GHCR namespace from `master` for Linux AMD64 and ARM64. The
+workflows use the repository's `GITHUB_TOKEN` with package write permission.
+An anonymous pull check follows each publication. GHCR package visibility may
+need a one-time change to Public in organization settings. Neither image
+embeds registry credentials, the SQLite database, or the origin TLS certificate
+and key. Compose references published images and mounts `data/` at runtime.
+The migration service remains opt-in; publishing or starting the API does not
+apply schema changes.
 
 ## Public routing, CORS, and TLS
 
