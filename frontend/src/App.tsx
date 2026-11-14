@@ -195,79 +195,74 @@ function App() {
     }
   }
 
-  // TELA DE CARREGAMENTO DA SESSÃO
+  // Carregamento da sessão
   if (restoringSession) {
     return (
-      <main
-        className="auth-page"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "24px",
-        }}
-      >
-        <div className="success-card">
-          <div className="brand-icon">
-            <LinkIcon />
-          </div>
-
-          <h2>Bem-vindo ao Dulio.</h2>
-
+      <main className="db-auth db-auth-loading">
+        <div className="db-loading-panel" role="status" aria-live="polite">
+          <div className="db-logo-mark"><LinkIcon size={28} /></div>
+          <strong>DULIO<span className="db-accent-dot">.</span></strong>
           <p>Verificando sua sessão...</p>
         </div>
       </main>
     );
   }
 
-  // NAVEGAÇÃO AUTENTICADA COM UM ÚNICO CABEÇALHO
+  // Área logada: cabeçalho compartilhado entre links e avaliações
   if (session) {
     const name = session.user.display_name || session.user.username;
 
     return (
-      <div className="app-shell">
-        <header className="dashboard-header app-header">
-          <div className="dashboard-brand">
-            <div className="brand-icon">
-              <LinkIcon size={23} />
-            </div>
-            <strong>Dulio.</strong>
+      <div className="app-shell db-shell">
+        <header className="dashboard-header app-header db-header">
+          <div className="dashboard-brand db-brand">
+            <span className="brand-icon db-logo-mark" aria-hidden="true">
+              <LinkIcon size={27} />
+            </span>
+            <span className="db-brand-type">
+              <strong>DULIO</strong>
+              <small>SHORTENER</small>
+            </span>
           </div>
 
-          <nav className="app-nav" aria-label="Navegação principal">
+          <nav className="app-nav db-nav" aria-label="Navegação principal">
             <button
               type="button"
-              className={`app-nav-button ${authenticatedPage === "dashboard" ? "active" : ""}`}
+              className={`app-nav-button db-nav-button ${authenticatedPage === "dashboard" ? "active" : ""}`}
               aria-current={authenticatedPage === "dashboard" ? "page" : undefined}
               onClick={() => setAuthenticatedPage("dashboard")}
             >
-              Meus links
+              LINKS
             </button>
             <button
               type="button"
-              className={`app-nav-button ${authenticatedPage === "reviews" ? "active" : ""}`}
+              className={`app-nav-button db-nav-button ${authenticatedPage === "reviews" ? "active" : ""}`}
               aria-current={authenticatedPage === "reviews" ? "page" : undefined}
               onClick={() => setAuthenticatedPage("reviews")}
             >
-              ★ Avaliações
+              AVALIAÇÕES
             </button>
           </nav>
 
-          <div className="dashboard-user">
-            <div className="user-avatar" title={name}>
+          <div className="dashboard-user db-user">
+            <div className="user-avatar db-avatar" title={name} aria-hidden="true">
               {name.charAt(0).toUpperCase()}
+            </div>
+            <div className="db-user-info">
+              <strong>{name}</strong>
+              <span>Minha conta</span>
             </div>
             <button
               type="button"
-              className="logout-button"
+              className="logout-button db-logout"
               onClick={() => void handleLogout()}
             >
-              Sair
+              <span aria-hidden="true">↗</span> SAIR
             </button>
           </div>
         </header>
 
-        <div className="app-content">
+        <div className="app-content db-content">
           {authenticatedPage === "reviews" ? (
             <Reviews
               session={session}
@@ -281,277 +276,144 @@ function App() {
     );
   }
 
+  // Login e cadastro — visual brutalista, sem mudar o fluxo de autenticação
   return (
-    <main className="auth-page">
-      <div className="background-glow glow-one" />
-      <div className="background-glow glow-two" />
-
-      <div className="auth-container">
-
-        {/* LADO ESQUERDO */}
-        <section className="hero-section">
-
-          {/* LOGO */}
-          <div className="brand">
-            <div className="brand-icon">
-              <LinkIcon size={25} />
-            </div>
-
-            <span>
-              Dulio
-              <span className="brand-highlight">.</span>
+    <main className="auth-page db-auth">
+      <div className="auth-container db-auth-layout">
+        <section className="hero-section db-auth-hero">
+          <div className="brand db-auth-brand">
+            <span className="brand-icon db-logo-mark"><LinkIcon size={28} /></span>
+            <span className="db-brand-type">
+              <strong>DULIO</strong>
+              <small>SHORTENER</small>
             </span>
           </div>
 
-          {/* APRESENTAÇÃO */}
-          <div className="hero-content">
-
-            <div className="hero-badge">
-              <span className="status-dot" />
-              SEUS LINKS, SIMPLIFICADOS
-            </div>
-
+          <div className="hero-content db-auth-hero-content">
+            <span className="db-section-index">[ 01 / SHORTENER ]</span>
             <h1>
-              Links menores.
-              <br />
-              <span>Possibilidades maiores.</span>
+              LINKS LONGOS<span className="db-accent-dot">.</span>
+              <span className="db-hero-highlight">CAMINHOS CURTOS.</span>
             </h1>
-
-            <p className="hero-description">
-              Transforme URLs longas em links curtos,
-              fáceis de compartilhar e gerenciar.
-              Tudo em um só lugar.
+            <p className="hero-description db-hero-description">
+              Encurte seus links, copie e compartilhe. Sem complicação.
             </p>
 
-            {/* DEMONSTRAÇÃO DO ENCURTADOR */}
-            <div className="url-demo">
-
-              <div className="demo-header">
-                <span className="demo-dots">
-                  <i />
-                  <i />
-                  <i />
-                </span>
-
-                <span>Como funciona</span>
+            <div className="db-flow-demo" aria-label="Exemplo de encurtamento">
+              <div className="db-flow-label">COMO FUNCIONA</div>
+              <div className="db-flow-source">
+                <span>01 / URL ORIGINAL</span>
+                <code>https://exemplo.com/caminho/muito/longo</code>
               </div>
-
-              <div className="demo-body">
-
-                <span className="demo-label">
-                  SUA URL ORIGINAL
-                </span>
-
-                <div className="url-original">
-                  <span className="url-symbol">↗</span>
-
-                  <span className="url-value">
-                    https://exemplo.com/produtos/categoria/123...
-                  </span>
-                </div>
-
-                <div className="conversion">
-                  <div className="conversion-line" />
-                  <div className="conversion-icon">↓</div>
-                  <div className="conversion-line" />
-                </div>
-
-                <span className="demo-label">
-                  SEU LINK ENCURTADO
-                </span>
-
-                <div className="url-short">
-                  <LinkIcon size={19} />
-
-                  <span>dulio.link/abc123</span>
-
-                  <span className="short-check">✓</span>
-                </div>
-
-                <div className="demo-success">
-                  ✓ Simples, rápido e pronto para compartilhar
-                </div>
-
+              <div className="db-flow-arrow" aria-hidden="true">↓ ↓ ↓</div>
+              <div className="db-flow-result">
+                <span>02 / LINK CURTO</span>
+                <strong><LinkIcon size={19} /> dulio.link/abc123</strong>
               </div>
             </div>
-
           </div>
 
-          {/* RODAPÉ ESQUERDO */}
-          <div className="hero-footer">
-            © {new Date().getFullYear()} Dulio Shortener
-          </div>
-
+          <footer className="hero-footer db-hero-footer">
+            © {new Date().getFullYear()} DULIO SHORTENER
+          </footer>
         </section>
 
-        {/* LADO DIREITO */}
-        <section className="form-section">
+        <section className="form-section db-auth-form-section">
+          <div className="db-form-topline">ACESSO / DULIO SHORTENER <span>↗</span></div>
 
           {page === "register" ? (
-
-            /* TELA DE CADASTRO */
             <Register
               onBack={handleGoToLogin}
               onSuccess={handleRegisterSuccess}
             />
-
           ) : (
-
-            /* TELA DE LOGIN */
-            <div className="login-card">
-
-              {/* LOGO MOBILE */}
-              <div className="mobile-brand">
-                <div className="brand-icon">
-                  <LinkIcon />
-                </div>
-
-                <span>Dulio.</span>
+            <div className="login-card db-login-panel">
+              <div className="mobile-brand db-mobile-brand">
+                <span className="brand-icon db-logo-mark"><LinkIcon /></span>
+                <strong>DULIO.</strong>
               </div>
 
-              {/* CABEÇALHO */}
-              <div className="form-heading">
-                <span className="welcome-label">
-                  BEM-VINDO DE VOLTA
-                </span>
-
-                <h2>Acesse sua conta</h2>
-
-                <p>
-                  Entre com suas credenciais para continuar.
-                </p>
+              <div className="form-heading db-form-heading">
+                <span className="welcome-label db-overline">ÁREA DE ACESSO</span>
+                <h2>ENTRAR<span className="db-accent-dot">.</span></h2>
+                <p>Use sua conta para gerenciar seus links.</p>
               </div>
 
-              {/* MENSAGEM APÓS CADASTRO */}
               {registerSuccess && (
-                <div
-                  className="success-message"
-                  role="status"
-                >
-                  ✓ Conta criada com sucesso!
-                  Faça login para continuar.
+                <div className="success-message" role="status">
+                  ✓ Conta criada com sucesso. Faça login para continuar.
                 </div>
               )}
 
-              {/* FORMULÁRIO */}
-              <form onSubmit={handleLogin}>
-
-                {/* USUÁRIO */}
-                <div className="field-group">
-                  <label htmlFor="username">
-                    Nome de usuário
-                  </label>
-
-                  <div className="input-wrapper">
-                    <span className="input-icon">＠</span>
-
+              <form onSubmit={handleLogin} className="db-login-form">
+                <div className="field-group db-field">
+                  <label htmlFor="username">NOME DE USUÁRIO</label>
+                  <div className="input-wrapper db-input-wrap">
                     <input
                       id="username"
                       type="text"
-                      placeholder="Digite seu usuário"
+                      placeholder="Seu usuário"
                       autoComplete="username"
                       value={username}
-                      onChange={(e) =>
-                        setUsername(e.target.value)
-                      }
+                      onChange={(event) => setUsername(event.target.value)}
                       required
                     />
                   </div>
                 </div>
 
-                {/* SENHA */}
-                <div className="field-group">
-                  <label htmlFor="password">
-                    Senha
-                  </label>
-
-                  <div className="input-wrapper">
-                    <span className="input-icon">⌑</span>
-
+                <div className="field-group db-field">
+                  <label htmlFor="password">SENHA</label>
+                  <div className="input-wrapper db-input-wrap">
                     <input
                       id="password"
-                      type={
-                        showPassword
-                          ? "text"
-                          : "password"
-                      }
-                      placeholder="Digite sua senha"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Sua senha"
                       autoComplete="current-password"
                       value={password}
-                      onChange={(e) =>
-                        setPassword(e.target.value)
-                      }
+                      onChange={(event) => setPassword(event.target.value)}
                       required
                     />
-
                     <button
                       type="button"
-                      className="password-toggle"
-                      onClick={() =>
-                        setShowPassword(!showPassword)
-                      }
-                      aria-label={
-                        showPassword
-                          ? "Ocultar senha"
-                          : "Mostrar senha"
-                      }
+                      className="password-toggle db-password-toggle"
+                      onClick={() => setShowPassword((current) => !current)}
+                      aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      aria-pressed={showPassword}
                     >
-                      {showPassword
-                        ? "Ocultar"
-                        : "Mostrar"}
+                      {showPassword ? "OCULTAR" : "MOSTRAR"}
                     </button>
                   </div>
                 </div>
 
-                {/* ERRO */}
-                {error && (
-                  <div
-                    className="error-message"
-                    role="alert"
-                  >
-                    {error}
-                  </div>
-                )}
+                {error && <div className="error-message" role="alert">{error}</div>}
 
-                {/* BOTÃO LOGIN */}
                 <button
                   type="submit"
-                  className="submit-button"
+                  className="submit-button db-submit"
                   disabled={loading}
                 >
-                  {loading
-                    ? "Entrando..."
-                    : "Entrar na minha conta"}
-
-                  {!loading && <span>→</span>}
+                  {loading ? "ENTRANDO..." : "ENTRAR NA CONTA"}
+                  {!loading && <span aria-hidden="true">→</span>}
                 </button>
-
               </form>
 
-              {/* IR PARA CADASTRO */}
-              <div className="register-section">
-                Ainda não tem uma conta?
-
+              <div className="register-section db-register-section">
+                <span>Ainda não tem uma conta?</span>
                 <button
                   type="button"
-                  className="auth-link"
+                  className="auth-link db-register-link"
                   onClick={handleGoToRegister}
                 >
-                  Criar conta
+                  CRIAR CONTA ↗
                 </button>
               </div>
-
             </div>
-
           )}
 
-          {/* RODAPÉ DIREITO */}
-          <div className="form-footer">
-            Encurte. Compartilhe. Simplifique.
-          </div>
-
+          <footer className="form-footer db-form-footer">
+            LINK LONGO → LINK CURTO
+          </footer>
         </section>
-
       </div>
     </main>
   );

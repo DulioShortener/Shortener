@@ -1,0 +1,36 @@
+
+@media (max-width: 1050px) {
+  .db-auth-layout { grid-template-columns: minmax(0, 1fr) minmax(330px, .9fr); }
+  .db-auth-hero { padding: 32px; }
+  .db-auth-hero-content h1 { font-size: clamp(36px, 5vw, 60px); }
+  .db-nav { margin-left: 0; }
+  .db-header .db-user-info { display: none; }
+}
+@media (max-width: 760px) {
+  .db-auth-layout { display: block; }
+  .db-auth-hero { display: none; }
+  .db-auth-form-section { min-height: 100vh; padding: 24px 18px; }
+  .db-form-topline { margin-bottom: 14px; }
+  .db-mobile-brand { display: flex; gap: 11px; margin-bottom: 26px; }
+  .db-header { gap: 12px; }
+  .db-header .db-nav { order: 3; width: 100%; flex: none; justify-content: stretch; }
+  .db-header .db-nav-button { flex: 1; padding: 11px 10px; }
+  .db-header .db-avatar { display: none; }
+  .db-header .db-logout { padding: 10px 12px; }
+  .db-content .dashboard-content { padding: 24px 14px; }
+  .db-content .dashboard-panel { padding: 16px; }
+  .db-content .link-item { flex-direction: column; align-items: stretch; }
+  .db-content .link-actions { width: 100%; }
+  .db-content .link-actions button { flex: 1; }
+}
+@media (max-width: 440px) {
+  .db-brand-type strong { font-size: 24px; }
+  .db-logo-mark { width: 36px; height: 36px; }
+  .db-header .db-user { margin-left: auto; }
+  .db-content .dashboard-welcome h1 { font-size: 32px; }
+  .db-content .dashboard-url-form { flex-direction: column; }
+  .db-content .dashboard-url-form button { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

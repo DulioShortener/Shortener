@@ -1,0 +1,131 @@
+
+.app-shell {
+
+  min-height: 100vh;
+
+  background: #090d19;
+
+}
+
+.app-content > .dashboard > .dashboard-header {
+
+  display: none;
+
+}
+
+.app-nav {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+}
+
+.app-nav-button {
+
+  background: transparent;
+
+  border: 1px solid transparent;
+
+  border-radius: 9px;
+
+  padding: 11px 17px;
+
+  color: #94a3b8;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: background 0.2s, color 0.2s;
+
+}
+
+.app-nav-button:hover {
+
+  color: #ffffff;
+
+  background: #222b40;
+
+}
+
+.app-nav-button.active {
+
+  color: #c4b5fd;
+
+  background: #6955ed25;
+
+  border-color: #6955ed50;
+
+}
+
+@media (max-width: 650px) {
+
+  .app-header {
+
+    flex-wrap: wrap;
+
+  }
+
+  .app-nav {
+
+    order: 3;
+
+    width: 100%;
+
+    justify-content: center;
+
+  }
+
+  .app-nav-button {
+
+    flex: 1;
+
+  }
+
+}
+
+
+/* HEADER / APPLICAÇÃO AUTENTICADA */
+.app-shell.db-shell { min-height: 100vh; background: var(--db-bg); color: var(--db-white); }
+.dashboard-header.app-header.db-header {
+  background: #050505; border-bottom: 2px solid #deded8;
+  width: 100%; min-height: 88px; height: auto;
+  padding: 12px clamp(18px, 3vw, 48px);
+  display: flex; justify-content: space-between; gap: clamp(12px, 2.5vw, 40px);
+  align-items: center; flex-wrap: wrap;
+}
+.db-brand, .db-auth-brand { gap: 13px; flex-shrink: 0; }
+.db-logo-mark, .db-header .brand-icon {
+  width: 53px; height: 53px; display: grid; place-items: center;
+  background: transparent; color: var(--db-white); border: 0; box-shadow: none;
+  border-radius: 0; transform: rotate(-9deg);
+}
+.db-brand-type { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.db-brand-type strong { font-weight: 1000; font-size: clamp(24px, 2.5vw, 37px); line-height: .9; letter-spacing: -1.3px; color: var(--db-white); }
+.db-brand-type small { display: block; background: var(--db-orange); color: #050505; padding: 3px 8px;
+  font-size: 10px; letter-spacing: .31em; font-weight: 1000; }
+.db-nav { display: flex; gap: 14px; flex: 1; margin-left: 24px; align-items: center; }
+.db-nav .db-nav-button {
+  padding: 13px 25px; background: #050505; color: var(--db-white);
+  border: 2px solid var(--db-white); border-radius: 0;
+  font-size: 15px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase;
+  box-shadow: none; transition: none;
+}
+.db-nav .db-nav-button.active, .db-nav .db-nav-button:hover { background: var(--db-blue); color: white; border-color: var(--db-blue); }
+.db-header .db-user { gap: 13px; display: flex; color: var(--db-white); }
+.db-avatar { width: 45px; height: 45px; border: 2px solid var(--db-white);
+  background: #deded5; color: #050505; border-radius: 0; font-size: 23px; font-weight: 1000; }
+.db-user-info { display: flex; flex-direction: column; gap: 1px; max-width: 150px; }
+.db-user-info strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px; }
+.db-user-info span { color: var(--db-muted); font-size: 12px; }
+.db-header .db-logout { padding: 10px 17px; color: var(--db-white); background: transparent;
+  border: 2px solid var(--db-white); border-radius: 0; font-size: 14px; font-weight: 900; white-space: nowrap; }
+.db-header .db-logout:hover { background: var(--db-white); color: #090909; border-color: var(--db-white); }
+.db-content { background: #090909; }
+/* O header fica somente no App, não repete em páginas internas. */
+.app-content > .dashboard > .dashboard-header { display: none; }
