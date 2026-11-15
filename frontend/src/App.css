@@ -1,5 +1,7 @@
 @import "./styles/global.css";
 @import "./styles/auth.css";
 @import "./pages/Register.css";
+@import "./pages/Dashboard.css";
+@import "./pages/Reviews.css";
 @import "./styles/navigation.css";
 @import "./styles/responsive.css";
