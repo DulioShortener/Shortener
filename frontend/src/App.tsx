@@ -31,6 +31,22 @@ function LinkIcon({ size = 24 }: { size?: number }) {
   );
 }
 
+function DulioLogo({ width = 184 }: { width?: number }) {
+  return (
+    <img
+      src="/logo.png"
+      alt="Dulio Shortener"
+      style={{
+        display: "block",
+        width: "100%",
+        maxWidth: width,
+        height: "auto",
+        objectFit: "contain",
+      }}
+    />
+  );
+}
+
 function App() {
   // ESTADOS DO LOGIN
   const [username, setUsername] = useState("");
@@ -200,8 +216,7 @@ function App() {
     return (
       <main className="db-auth db-auth-loading">
         <div className="db-loading-panel" role="status" aria-live="polite">
-          <div className="db-logo-mark"><LinkIcon size={28} /></div>
-          <strong>DULIO<span className="db-accent-dot">.</span></strong>
+          <DulioLogo width={190} />
           <p>Verificando sua sessão...</p>
         </div>
       </main>
@@ -216,13 +231,7 @@ function App() {
       <div className="app-shell db-shell">
         <header className="dashboard-header app-header db-header">
           <div className="dashboard-brand db-brand">
-            <span className="brand-icon db-logo-mark" aria-hidden="true">
-              <LinkIcon size={27} />
-            </span>
-            <span className="db-brand-type">
-              <strong>DULIO</strong>
-              <small>SHORTENER</small>
-            </span>
+            <DulioLogo width={190} />
           </div>
 
           <nav className="app-nav db-nav" aria-label="Navegação principal">
@@ -282,11 +291,7 @@ function App() {
       <div className="auth-container db-auth-layout">
         <section className="hero-section db-auth-hero">
           <div className="brand db-auth-brand">
-            <span className="brand-icon db-logo-mark"><LinkIcon size={28} /></span>
-            <span className="db-brand-type">
-              <strong>DULIO</strong>
-              <small>SHORTENER</small>
-            </span>
+            <DulioLogo width={240} />
           </div>
 
           <div className="hero-content db-auth-hero-content">
@@ -303,12 +308,12 @@ function App() {
               <div className="db-flow-label">COMO FUNCIONA</div>
               <div className="db-flow-source">
                 <span>01 / URL ORIGINAL</span>
-                <code>https://exemplo.com/caminho/muito/longo</code>
+                <code>https://www.mercadolivre.com.br/tenis-feminino-wired-run-slip-on-bdp-puma/up/MLBU3644000625</code>
               </div>
               <div className="db-flow-arrow" aria-hidden="true">↓ ↓ ↓</div>
               <div className="db-flow-result">
                 <span>02 / LINK CURTO</span>
-                <strong><LinkIcon size={19} /> dulio.link/abc123</strong>
+                <strong><LinkIcon size={19} /> https://3dreamstudio.com.br/r/8Iv7Dby7</strong>
               </div>
             </div>
           </div>
@@ -329,8 +334,7 @@ function App() {
           ) : (
             <div className="login-card db-login-panel">
               <div className="mobile-brand db-mobile-brand">
-                <span className="brand-icon db-logo-mark"><LinkIcon /></span>
-                <strong>DULIO.</strong>
+                <DulioLogo width={180} />
               </div>
 
               <div className="form-heading db-form-heading">
